@@ -42,6 +42,7 @@ import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsOff
@@ -62,6 +63,7 @@ import androidx.compose.material3.ElevatedAssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
@@ -71,6 +73,7 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -107,6 +110,7 @@ import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.fadingEdge
 import com.csakitheone.onrail.ui.theme.OnRailTheme
+import com.google.android.gms.location.LocationServices
 import ovh.plrapps.mapcompose.api.addLayer
 import ovh.plrapps.mapcompose.api.addMarker
 import ovh.plrapps.mapcompose.api.enableZooming
@@ -183,17 +187,14 @@ class TrainActivity : ComponentActivity() {
         }
 
         LaunchedEffect(train, messages, selectedTab, LocationUtils.current) {
-            val latestMessageLatLng = LatLng.fromString(
-                messages
-                    .filter { it.location.isNotBlank() }
-                    .maxByOrNull { it.timestamp }
-                    ?.location
-            )
+            val latestMessage = messages
+                .filter { it.location.isNotBlank() }
+                .maxByOrNull { it.timestamp }
             val trainLatLng = LatLng(train.lat, train.lon)
-            val latestLatLng = if (latestMessageLatLng == LatLng.ZERO) {
+            val latestLatLng = if (trainsLastUpdated > (latestMessage?.timestamp ?: 0L)) {
                 trainLatLng
             } else {
-                latestMessageLatLng
+                LatLng.fromString(latestMessage?.location)
             }
 
             mapState.removeAllMarkers()
@@ -251,15 +252,20 @@ class TrainActivity : ComponentActivity() {
                             modifier = Modifier.alpha(alpha),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Icon(
-                                imageVector = when (msg.messageType) {
-                                    Message.TYPE_REPORT -> Icons.Default.Report
-                                    Message.TYPE_TEXT -> Icons.Default.ChatBubble
-                                    else -> Icons.Default.GpsFixed
+                            FilledIconButton(
+                                onClick = {
+                                    selectedMessage = msg
                                 },
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
-                            )
+                            ) {
+                                Icon(
+                                    imageVector = when (msg.messageType) {
+                                        Message.TYPE_REPORT -> Icons.Default.Report
+                                        Message.TYPE_TEXT -> Icons.Default.ChatBubble
+                                        else -> Icons.Default.GpsFixed
+                                    },
+                                    contentDescription = null,
+                                )
+                            }
                             Badge {
                                 Text(text = "${time}")
                             }
@@ -292,7 +298,7 @@ class TrainActivity : ComponentActivity() {
                         },
                         onMessageRemoved = {
                             messages =
-                                messages.filter { msg -> msg.timestamp != it.timestamp && msg.senderId != it.senderId }
+                                messages.filter { msg -> msg.timestamp != it.timestamp }
                         },
                     )
                 }
@@ -343,7 +349,8 @@ class TrainActivity : ComponentActivity() {
                         }
                         TextButton(
                             onClick = {
-                                val clipboardManager = getSystemService(ClipboardManager::class.java)
+                                val clipboardManager =
+                                    getSystemService(ClipboardManager::class.java)
                                 clipboardManager.setPrimaryClip(
                                     ClipData.newPlainText(
                                         "Üzenet másolása",
@@ -558,7 +565,9 @@ class TrainActivity : ComponentActivity() {
                             expanded = true,
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
@@ -571,11 +580,12 @@ class TrainActivity : ComponentActivity() {
                                     modifier = Modifier.weight(1f),
                                 ) {
                                     Text(text = "Helyadatok küldése")
-                                    Text(
-                                        text = if (LocalSettings.isSendingLocationEnabled) "Köszönjük, hogy segítesz <3"
-                                        else "Segítsd utastársaid pontos infókkal!",
-                                        style = MaterialTheme.typography.labelSmall,
-                                    )
+                                    AnimatedVisibility(LocalSettings.isSendingLocationEnabled) {
+                                        Text(
+                                            text = "Köszönjük, hogy segítesz <3",
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    }
                                 }
                                 IconButton(
                                     onClick = { isLocationSendingDialogOpen = true },
@@ -596,6 +606,15 @@ class TrainActivity : ComponentActivity() {
                                         } else {
                                             LocalSettings.isSendingLocationEnabled = false
                                             LocalSettings.save(this@TrainActivity)
+                                        }
+                                    },
+                                    thumbContent = {
+                                        AnimatedVisibility(LocalSettings.isSendingLocationEnabled) {
+                                            Icon(
+                                                modifier = Modifier.size(SwitchDefaults.IconSize),
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = null,
+                                            )
                                         }
                                     },
                                 )
@@ -631,6 +650,7 @@ class TrainActivity : ComponentActivity() {
                                         onValueChange = { messageText = it.take(500) },
                                         leadingIcon = {
                                             IconButton(
+                                                enabled = !isSendingMessage,
                                                 onClick = { isAddReportMenuOpen = true },
                                             ) {
                                                 Icon(
@@ -638,7 +658,7 @@ class TrainActivity : ComponentActivity() {
                                                     contentDescription = null
                                                 )
                                                 DropdownMenu(
-                                                    expanded = isAddReportMenuOpen,
+                                                    expanded = isAddReportMenuOpen && !isSendingMessage,
                                                     onDismissRequest = {
                                                         isAddReportMenuOpen = false
                                                     },
@@ -667,11 +687,18 @@ class TrainActivity : ComponentActivity() {
                                                                                 location = latLng.toString(),
                                                                             ),
                                                                         ) {
+                                                                            if (!it) {
+                                                                                Toast.makeText(
+                                                                                    this@TrainActivity,
+                                                                                    "Hiba történt az üzenet küldésekor!",
+                                                                                    Toast.LENGTH_SHORT,
+                                                                                ).show()
+                                                                            }
                                                                             isSendingMessage = false
                                                                         }
                                                                     }
                                                                     return@DropdownMenuItem
-                                                                } else if (message.messageType == Message.TYPE_LOCATION_PING) {
+                                                                } else {
                                                                     Toast.makeText(
                                                                         this@TrainActivity,
                                                                         "Engedélyezd a helyadatok küldését ehhez!",
@@ -679,13 +706,6 @@ class TrainActivity : ComponentActivity() {
                                                                     ).show()
                                                                     isSendingMessage = false
                                                                     return@DropdownMenuItem
-                                                                }
-
-                                                                RTDB.sendMessage(
-                                                                    trainId = train.trip.tripShortName,
-                                                                    message = message,
-                                                                ) {
-                                                                    isSendingMessage = false
                                                                 }
                                                             },
                                                         )

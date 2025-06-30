@@ -19,6 +19,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -42,6 +44,8 @@ import com.csakitheone.onrail.LocationUtils
 import com.csakitheone.onrail.data.Auth
 import com.csakitheone.onrail.data.sources.LocalSettings
 import androidx.core.net.toUri
+import java.util.Timer
+import kotlin.concurrent.timerTask
 
 @Composable
 fun ProfileIcon(
@@ -49,6 +53,8 @@ fun ProfileIcon(
 ) {
     val activity = LocalActivity.current
 
+    var isGreetingEnabled by remember { mutableStateOf(false) }
+    var greetingText by remember { mutableStateOf("") }
     var isMenuOpen by remember { mutableStateOf(false) }
     var appVersionInfo by remember { mutableStateOf("") }
 
@@ -57,67 +63,88 @@ fun ProfileIcon(
         appVersionInfo = "${pInfo?.versionName} (${pInfo?.longVersionCode})"
     }
 
-    FloatingActionButton(
-        modifier = modifier,
+    LaunchedEffect(Auth.currentUser) {
+        if (Auth.currentUser == null) return@LaunchedEffect
+
+        greetingText = "Helló,\n${Auth.currentUser?.displayName ?: "ismeretlen felhasználó"}!"
+        isGreetingEnabled = true
+
+        Timer().schedule(timerTask {
+            isGreetingEnabled = false
+        }, 5000L)
+    }
+
+    ExtendedFloatingActionButton(
+        modifier = modifier.widthIn(max = 180.dp),
         onClick = { isMenuOpen = true },
-    ) {
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
-            contentDescription = null
-        )
-        DropdownMenu(
-            expanded = isMenuOpen,
-            onDismissRequest = { isMenuOpen = false },
-            modifier = Modifier.widthIn(max = 300.dp),
-        ) {
-            if (Auth.currentUser != null) {
+        expanded = isGreetingEnabled,
+        text = {
+            Text(
+                text = greetingText,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        icon = {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = null
+            )
+            DropdownMenu(
+                expanded = isMenuOpen,
+                onDismissRequest = { isMenuOpen = false },
+                modifier = Modifier.widthIn(max = 300.dp),
+            ) {
+                if (Auth.currentUser != null) {
+                    Text(
+                        modifier = Modifier.padding(16.dp),
+                        text = "Bejelentkezve mint:\n${Auth.currentUser?.displayName ?: "ismeretlen felhasználó"}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                DropdownMenuItem(
+                    onClick = {
+                        if (Auth.currentUser == null) {
+                            if (activity != null) Auth.signInWithGoogle(activity)
+                        } else {
+                            Auth.signOut()
+                        }
+                        isMenuOpen = false
+                    },
+                    text = {
+                        Text(
+                            text = if (Auth.currentUser == null) "Bejelentkezés Google fiókkal"
+                            else "Kijelentkezés"
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (Auth.currentUser == null) Icons.AutoMirrored.Default.Login
+                            else Icons.AutoMirrored.Default.Logout,
+                            contentDescription = null
+                        )
+                    },
+                )
+                HorizontalDivider()
                 Text(
                     modifier = Modifier.padding(16.dp),
-                    text = "Bejelentkezve mint:\n${Auth.currentUser?.displayName ?: "ismeretlen felhasználó"}",
+                    text = "App verzió\n$appVersionInfo\n\nUID (Csákin kívül ne oszd meg senkivel!)\n${Auth.currentUser?.uid ?: "-"}",
                     style = MaterialTheme.typography.bodySmall,
                 )
-            }
-            DropdownMenuItem(
-                onClick = {
-                    if (Auth.currentUser == null) {
-                        if (activity != null) Auth.signInWithGoogle(activity)
-                    } else {
-                        Auth.signOut()
-                    }
-                    isMenuOpen = false
-                },
-                text = {
-                    Text(
-                        text = if (Auth.currentUser == null) "Bejelentkezés Google fiókkal"
-                        else "Kijelentkezés"
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = if (Auth.currentUser == null) Icons.AutoMirrored.Default.Login
-                        else Icons.AutoMirrored.Default.Logout,
-                        contentDescription = null
-                    )
-                },
-            )
-            HorizontalDivider()
-            Text(
-                modifier = Modifier.padding(16.dp),
-                text = "App verzió\n$appVersionInfo\n\nUID (Csákin kívül ne oszd meg senkivel!)\n${Auth.currentUser?.uid ?: "-"}",
-                style = MaterialTheme.typography.bodySmall,
-            )
-            DropdownMenuItem(
-                onClick = {
-                    isMenuOpen = false
-                    activity?.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            "https://play.google.com/store/apps/details?id=com.csakitheone.onrail".toUri()
+                DropdownMenuItem(
+                    onClick = {
+                        isMenuOpen = false
+                        activity?.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                "https://play.google.com/store/apps/details?id=com.csakitheone.onrail".toUri()
+                            )
                         )
-                    )
-                },
-                text = { Text(text = "Play Áruház megnyitása") },
-            )
-        }
-    }
+                    },
+                    text = { Text(text = "Play Áruház megnyitása") },
+                )
+            }
+        },
+    )
 }
