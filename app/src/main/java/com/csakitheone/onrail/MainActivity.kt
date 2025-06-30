@@ -37,6 +37,7 @@ import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -51,6 +52,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
@@ -134,6 +136,7 @@ class MainActivity : ComponentActivity() {
         var trainsLastUpdated by remember { mutableLongStateOf(0L) }
         var isUpdateInfoDialogOpen by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
+        var isLoadingLocation by remember { mutableStateOf(false) }
 
         val trainsLastUpdatedText by remember(isLoading, trainsLastUpdated) {
             derivedStateOf {
@@ -291,9 +294,11 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.weight(1f),
                             expanded = true,
                         ) {
-                            Column(modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp)) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp)
+                            ) {
                                 Text(stringResource(R.string.app_name))
                                 Text(
                                     text = trainsLastUpdatedText,
@@ -320,31 +325,71 @@ class MainActivity : ComponentActivity() {
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    HorizontalFloatingToolbar(
-                        modifier = Modifier.padding(8.dp),
-                        expanded = false,
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        TextField(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.extraLarge),
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it.take(100) },
-                            placeholder = {
-                                Text(
-                                    text = "Keresés járatszám vagy végállomás alapján",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                        HorizontalFloatingToolbar(
+                            modifier = Modifier.weight(1f),
+                            expanded = false,
+                        ) {
+                            TextField(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(MaterialTheme.shapes.extraLarge),
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it.take(100) },
+                                placeholder = {
+                                    Text(
+                                        text = "Keresés járatszám vagy végállomás alapján",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = null
+                                    )
+                                },
+                                maxLines = 1,
+                            )
+                        }
+                        FloatingActionButton(
+                            onClick = {
+                                if (isLoadingLocation) return@FloatingActionButton
+
+                                isLoadingLocation = true
+                                LocationUtils.getCurrentLocation(this@MainActivity) {
+                                    coroutineScope.launch {
+                                        mapState.scrollTo(
+                                            x = it.normalized.longitude,
+                                            y = it.normalized.latitude,
+                                            destScale = .2,
+                                        )
+                                        isLoadingLocation = false
+                                    }
+                                }
                             },
-                            leadingIcon = {
+                        ) {
+                            if (isLoadingLocation) {
+                                LoadingIndicator(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                            else {
                                 Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = null
+                                    imageVector = if (LocationUtils.current != LatLng.ZERO) Icons.Default.GpsFixed
+                                    else Icons.Default.GpsNotFixed,
+                                    contentDescription = "Get current location",
                                 )
-                            },
-                            maxLines = 1,
-                        )
+                            }
+                        }
                     }
                 }
             }
