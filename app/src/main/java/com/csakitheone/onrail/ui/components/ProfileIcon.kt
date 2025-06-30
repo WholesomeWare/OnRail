@@ -2,6 +2,8 @@ package com.csakitheone.onrail.ui.components
 
 import android.app.Activity
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
@@ -39,6 +41,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.csakitheone.onrail.LocationUtils
 import com.csakitheone.onrail.data.Auth
 import com.csakitheone.onrail.data.sources.LocalSettings
+import androidx.core.net.toUri
 
 @Composable
 fun ProfileIcon(
@@ -102,6 +105,18 @@ fun ProfileIcon(
                 modifier = Modifier.padding(16.dp),
                 text = "App verzió\n$appVersionInfo\n\nUID (Csákin kívül ne oszd meg senkivel!)\n${Auth.currentUser?.uid ?: "-"}",
                 style = MaterialTheme.typography.bodySmall,
+            )
+            DropdownMenuItem(
+                onClick = {
+                    isMenuOpen = false
+                    activity?.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            "https://play.google.com/store/apps/details?id=com.csakitheone.onrail".toUri()
+                        )
+                    )
+                },
+                text = { Text(text = "Play Áruház megnyitása") },
             )
         }
     }
