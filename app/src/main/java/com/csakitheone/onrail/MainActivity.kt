@@ -52,6 +52,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -224,24 +225,22 @@ class MainActivity : ComponentActivity() {
                     relativeOffset = Offset(-.5f, -.5f),
                     renderingStrategy = RenderingStrategy.Clustering("trains"),
                 ) {
-                    Column(
-                        modifier = Modifier.clickable {
-                            startActivity(
-                                Intent(
-                                    this@MainActivity,
-                                    TrainActivity::class.java
-                                ).apply {
-                                    putExtra("trainJson", train.toString())
-                                }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        FilledIconButton(
+                            onClick = {
+                                startActivity(
+                                    Intent(
+                                        this@MainActivity,
+                                        TrainActivity::class.java
+                                    ).putExtra("trainJson", train.toString())
+                                )
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Train,
+                                contentDescription = null,
                             )
-                        },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Train,
-                            contentDescription = "Train position",
-                            tint = MaterialTheme.colorScheme.secondary,
-                        )
+                        }
                         Badge {
                             Text(text = train.trip.tripShortName.substringBefore(" "))
                         }
