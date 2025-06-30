@@ -1,5 +1,7 @@
 package com.csakitheone.onrail
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.os.Bundle
 import android.text.format.DateFormat
 import android.util.Log
@@ -173,6 +175,7 @@ class TrainActivity : ComponentActivity() {
         var isAddReportMenuOpen by remember { mutableStateOf(false) }
         var messageText by remember { mutableStateOf("") }
         var isSendingMessage by remember { mutableStateOf(false) }
+        var selectedMessage by remember { mutableStateOf<Message?>(null) }
 
         LaunchedEffect(Unit) {
             train = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
@@ -314,6 +317,50 @@ class TrainActivity : ComponentActivity() {
         }
 
         OnRailTheme {
+            if (selectedMessage != null) {
+                AlertDialog(
+                    onDismissRequest = { selectedMessage = null },
+                    title = { Text(text = "Üzenet részletei") },
+                    text = {
+                        MessageDisplay(
+                            modifier = Modifier.fillMaxWidth(),
+                            message = selectedMessage!!,
+                        )
+                    },
+                    confirmButton = {
+                        if (Auth.currentUser != null && selectedMessage?.senderId == Auth.currentUser?.uid) {
+                            TextButton(
+                                onClick = {
+                                    RTDB.removeMessage(
+                                        trainId = train.trip.tripShortName,
+                                        message = selectedMessage!!
+                                    )
+                                    selectedMessage = null
+                                }
+                            ) {
+                                Text("Törlés")
+                            }
+                        }
+                        TextButton(
+                            onClick = {
+                                val clipboardManager = getSystemService(ClipboardManager::class.java)
+                                clipboardManager.setPrimaryClip(
+                                    ClipData.newPlainText(
+                                        "Üzenet másolása",
+                                        selectedMessage!!.content
+                                    )
+                                )
+                            }
+                        ) {
+                            Text("Másolás")
+                        }
+                        TextButton(onClick = { selectedMessage = null }) {
+                            Text("Bezárás")
+                        }
+                    },
+                )
+            }
+
             if (isLocationSendingDialogOpen) {
                 AlertDialog(
                     onDismissRequest = { isLocationSendingDialogOpen = false },
@@ -495,6 +542,7 @@ class TrainActivity : ComponentActivity() {
                                     MessageDisplay(
                                         modifier = Modifier.fillMaxWidth(),
                                         message = message,
+                                        onClick = { selectedMessage = it },
                                     )
                                 }
                             }

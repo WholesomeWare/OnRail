@@ -139,6 +139,15 @@ class RTDB {
                 .addOnCompleteListener { callback(it.isSuccessful) }
         }
 
+        fun removeMessage(
+            trainId: String,
+            message: Message,
+            callback: (Boolean) -> Unit = {},
+        ) {
+            ref.child("trains/$trainId/messages/${message.timestamp}").removeValue()
+                .addOnCompleteListener { callback(it.isSuccessful) }
+        }
+
         fun listenForMessages(
             trainId: String,
             onMessageAdded: (Message) -> Unit,

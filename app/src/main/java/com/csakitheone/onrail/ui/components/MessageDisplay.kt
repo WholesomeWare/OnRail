@@ -28,6 +28,7 @@ import com.csakitheone.onrail.data.model.Message
 fun MessageDisplay(
     modifier: Modifier = Modifier,
     message: Message,
+    onClick: (Message) -> Unit = {},
 ) {
     val time = remember {
         DateFormat.format(
@@ -53,7 +54,7 @@ fun MessageDisplay(
         when (message.messageType) {
             Message.TYPE_REPORT -> {
                 AssistChip(
-                    onClick = {},
+                    onClick = { onClick(message) },
                     label = { Text(text = message.content) },
                     leadingIcon = {
                         Icon(
@@ -69,7 +70,10 @@ fun MessageDisplay(
             }
 
             Message.TYPE_TEXT -> {
-                Card(shape = MaterialTheme.shapes.extraLarge) {
+                Card(
+                    onClick = { onClick(message) },
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
                     Text(
                         modifier = Modifier.padding(8.dp),
                         text = message.content,
