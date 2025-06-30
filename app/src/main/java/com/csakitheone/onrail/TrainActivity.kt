@@ -96,6 +96,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.csakitheone.onrail.data.Auth
+import com.csakitheone.onrail.data.TrainsProvider
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.model.Message
 import com.csakitheone.onrail.data.sources.LocalSettings
@@ -112,6 +113,8 @@ import ovh.plrapps.mapcompose.api.scrollTo
 import ovh.plrapps.mapcompose.ui.MapUI
 import ovh.plrapps.mapcompose.ui.state.MapState
 import java.net.URL
+import java.util.Timer
+import kotlin.concurrent.timerTask
 import kotlin.math.pow
 
 class TrainActivity : ComponentActivity() {
@@ -138,10 +141,11 @@ class TrainActivity : ComponentActivity() {
         val chatListState = rememberLazyListState()
         val mapState = remember { LocationUtils.getMapState() }
 
+        var isLoading by remember { mutableStateOf(false) }
         var selectedTab by remember { mutableIntStateOf(TAB_MAP) }
         var train by remember { mutableStateOf(EMMAVehiclePosition()) }
         var trainsLastUpdated by remember { mutableLongStateOf(0L) }
-        val trainsLastUpdatedText by remember(trainsLastUpdated) {
+        val trainsLastUpdatedText by remember(trainsLastUpdated, isLoading) {
             derivedStateOf {
                 if (trainsLastUpdated == 0L) {
                     "Nincs adat"
@@ -291,8 +295,21 @@ class TrainActivity : ComponentActivity() {
                 }
             )
 
+            val trainTimer = Timer("trainTimer").apply {
+                schedule(timerTask {
+                    isLoading = true
+                    TrainsProvider.getTrains(this@TrainActivity) { newTrains, lastUpdated ->
+                        train = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
+                            ?: EMMAVehiclePosition()
+                        trainsLastUpdated = lastUpdated
+                        isLoading = false
+                    }
+                }, 0L, 60_000L)
+            }
+
             onDispose {
                 RTDB.stopListeningForMessages()
+                trainTimer.cancel()
             }
         }
 
@@ -493,7 +510,7 @@ class TrainActivity : ComponentActivity() {
                             expanded = true,
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
