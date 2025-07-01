@@ -196,25 +196,30 @@ class TrainActivity : ComponentActivity() {
             val trainLatLng = LatLng(train.lat, train.lon)
             val latestLatLng = if (trainsLastUpdated > (latestMessage?.timestamp ?: 0L)) {
                 trainLatLng
-            } else {
-                LatLng.fromString(latestMessage?.location)
+            } else if (latestMessage != null) {
+                LatLng.fromString(latestMessage.location)
+            }
+            else {
+                LatLng(47.4979, 19.0402)
             }
 
             mapState.removeAllMarkers()
 
-            mapState.addMarker(
-                id = "user",
-                x = LocationUtils.current.normalized.longitude,
-                y = LocationUtils.current.normalized.latitude,
-                relativeOffset = Offset(-.5f, -.5f),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clip(CircleShape)
-                        .background(Color.Blue)
-                        .alpha(.2f),
-                )
+            if (LocationUtils.current != LatLng.ZERO) {
+                mapState.addMarker(
+                    id = "user",
+                    x = LocationUtils.current.normalized.longitude,
+                    y = LocationUtils.current.normalized.latitude,
+                    relativeOffset = Offset(-.5f, -.5f),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(Color.Blue)
+                            .alpha(.2f),
+                    )
+                }
             }
 
             mapState.addMarker(

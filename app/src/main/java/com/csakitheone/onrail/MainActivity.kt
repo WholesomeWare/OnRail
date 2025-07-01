@@ -204,18 +204,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            mapState.addMarker(
-                id = "user",
-                x = LocationUtils.current.normalized.longitude,
-                y = LocationUtils.current.normalized.latitude,
-                relativeOffset = Offset(-.5f, -.5f),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clip(CircleShape)
-                        .background(Color.Blue),
-                )
+            if (LocationUtils.current != LatLng.ZERO) {
+                mapState.addMarker(
+                    id = "user",
+                    x = LocationUtils.current.normalized.longitude,
+                    y = LocationUtils.current.normalized.latitude,
+                    relativeOffset = Offset(-.5f, -.5f),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(Color.Blue),
+                    )
+                }
             }
 
             visibleTrains.forEach { train ->
