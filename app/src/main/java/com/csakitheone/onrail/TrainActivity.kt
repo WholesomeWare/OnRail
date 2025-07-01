@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -75,6 +76,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,6 +98,7 @@ import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.fadingEdge
 import com.csakitheone.onrail.ui.theme.OnRailTheme
+import kotlinx.coroutines.launch
 import ovh.plrapps.mapcompose.api.addMarker
 import ovh.plrapps.mapcompose.api.removeAllMarkers
 import ovh.plrapps.mapcompose.api.scrollTo
@@ -130,10 +133,9 @@ class TrainActivity : ComponentActivity() {
         val mapState = remember { LocationUtils.getMapState() }
 
         var isLoading by remember { mutableStateOf(false) }
-        var isLoadingLocation by remember { mutableStateOf(false) }
         var selectedTab by remember { mutableIntStateOf(TAB_MAP) }
-        var train by remember { mutableStateOf(EMMAVehiclePosition()) }
-        var trainsLastUpdated by remember { mutableLongStateOf(0L) }
+        var train by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
+        var trainsLastUpdated by rememberSaveable { mutableLongStateOf(0L) }
         val trainsLastUpdatedText by remember(trainsLastUpdated, isLoading) {
             derivedStateOf {
                 if (trainsLastUpdated == 0L) {
@@ -160,7 +162,7 @@ class TrainActivity : ComponentActivity() {
         }
         var isLocationSendingDialogOpen by remember { mutableStateOf(false) }
         var isAddReportMenuOpen by remember { mutableStateOf(false) }
-        var messageText by remember { mutableStateOf("") }
+        var messageText by rememberSaveable { mutableStateOf("") }
         var isSendingMessage by remember { mutableStateOf(false) }
         var selectedMessage by remember { mutableStateOf<Message?>(null) }
 
@@ -269,41 +271,40 @@ class TrainActivity : ComponentActivity() {
         DisposableEffect(Unit) {
             train = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
 
-            RTDB.getMessages(
+            RTDB.listenForMessages(
                 trainId = train.trip.tripShortName,
-                callback = { newMessages ->
-                    messages = newMessages.sortedBy { it.timestamp }
-                    RTDB.listenForMessages(
-                        trainId = train.trip.tripShortName,
-                        onMessageAdded = {
-                            messages = (messages + it).sortedBy { msg -> msg.timestamp }
+                onMessageAdded = {
+                    messages = (messages + it).sortedBy { msg -> msg.timestamp }
 
-                            if (intent.getBooleanExtra("bubble", false) && it.senderId != Auth.currentUser?.uid) {
-                                when (it.messageType) {
-                                    Message.TYPE_TEXT -> {
-                                        NotifUtils.showBubble(
-                                            this@TrainActivity,
-                                            train,
-                                            chatMessageSenderName = it.senderName,
-                                            chatMessage = it.content
-                                        )
-                                    }
-                                    Message.TYPE_REPORT -> {
-                                        NotifUtils.showBubble(
-                                            this@TrainActivity,
-                                            train,
-                                            chatMessage = "Új jelentés: ${it.content}"
-                                        )
-                                    }
-                                }
+                    if (intent.getBooleanExtra(
+                            "bubble",
+                            false
+                        ) && it.senderId != Auth.currentUser?.uid
+                    ) {
+                        when (it.messageType) {
+                            Message.TYPE_TEXT -> {
+                                NotifUtils.showBubble(
+                                    this@TrainActivity,
+                                    train,
+                                    chatMessageSenderName = it.senderName,
+                                    chatMessage = it.content
+                                )
                             }
-                        },
-                        onMessageRemoved = {
-                            messages =
-                                messages.filter { msg -> msg.timestamp != it.timestamp }
-                        },
-                    )
-                }
+
+                            Message.TYPE_REPORT -> {
+                                NotifUtils.showBubble(
+                                    this@TrainActivity,
+                                    train,
+                                    chatMessage = "Új jelentés: ${it.content}"
+                                )
+                            }
+                        }
+                    }
+                },
+                onMessageRemoved = {
+                    messages =
+                        messages.filter { msg -> msg.timestamp != it.timestamp }
+                },
             )
 
             val trainTimer = Timer("trainTimer").apply {
@@ -801,7 +802,9 @@ class TrainActivity : ComponentActivity() {
                                 )
                                 Button(
                                     onClick = {
-                                        Auth.signInWithGoogle(this@TrainActivity)
+                                        coroutineScope.launch {
+                                            Auth.signInWithGoogle(this@TrainActivity)
+                                        }
                                     },
                                 ) {
                                     Text(text = "Bejelentkezés")

@@ -385,14 +385,21 @@ class MainActivity : ComponentActivity() {
                                 if (isLoadingLocation) return@FloatingActionButton
 
                                 isLoadingLocation = true
-                                LocationUtils.getCurrentLocation(this@MainActivity) {
-                                    coroutineScope.launch {
-                                        mapState.scrollTo(
-                                            x = it.normalized.longitude,
-                                            y = it.normalized.latitude,
-                                            destScale = .2,
-                                        )
+                                LocationUtils.requestPermissions { granted ->
+                                    if (!granted) {
                                         isLoadingLocation = false
+                                        return@requestPermissions
+                                    }
+
+                                    LocationUtils.getCurrentLocation(this@MainActivity) {
+                                        coroutineScope.launch {
+                                            mapState.scrollTo(
+                                                x = it.normalized.longitude,
+                                                y = it.normalized.latitude,
+                                                destScale = .2,
+                                            )
+                                            isLoadingLocation = false
+                                        }
                                     }
                                 }
                             },

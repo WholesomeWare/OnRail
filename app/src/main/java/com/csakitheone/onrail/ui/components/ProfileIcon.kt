@@ -32,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,8 @@ import com.csakitheone.onrail.LocationUtils
 import com.csakitheone.onrail.data.Auth
 import com.csakitheone.onrail.data.sources.LocalSettings
 import androidx.core.net.toUri
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.util.Timer
 import kotlin.concurrent.timerTask
 
@@ -52,6 +55,7 @@ fun ProfileIcon(
     modifier: Modifier = Modifier,
     showGreeting: Boolean = false,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val activity = LocalActivity.current
 
     var isGreetingEnabled by remember { mutableStateOf(false) }
@@ -107,7 +111,9 @@ fun ProfileIcon(
                 DropdownMenuItem(
                     onClick = {
                         if (Auth.currentUser == null) {
-                            if (activity != null) Auth.signInWithGoogle(activity)
+                            coroutineScope.launch {
+                                if (activity != null) Auth.signInWithGoogle(activity)
+                            }
                         } else {
                             Auth.signOut()
                         }

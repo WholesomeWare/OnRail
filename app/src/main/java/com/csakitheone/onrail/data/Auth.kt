@@ -1,11 +1,14 @@
 package com.csakitheone.onrail.data
 
 import android.app.Activity
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.NoCredentialException
 import com.csakitheone.onrail.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -13,8 +16,6 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 class Auth {
     companion object {
@@ -28,16 +29,20 @@ class Auth {
             currentUser = auth.currentUser
         }
 
-        fun signInWithGoogle(context: Activity, callback: (user: FirebaseUser?) -> Unit = {}) {
-            val credentialManager = CredentialManager.create(context)
-            GlobalScope.launch {
+        suspend fun signInWithGoogle(
+            activity: Activity,
+            callback: (user: FirebaseUser?) -> Unit = {}
+        ) {
+            val credentialManager = CredentialManager.create(activity)
+
+            try {
                 val result = credentialManager.getCredential(
-                    context,
+                    activity,
                     GetCredentialRequest.Builder()
                         .addCredentialOption(
                             GetGoogleIdOption.Builder()
                                 .setFilterByAuthorizedAccounts(false)
-                                .setServerClientId(context.getString(R.string.web_client_id))
+                                .setServerClientId(activity.getString(R.string.web_client_id))
                                 .build()
                         )
                         .build(),
@@ -61,6 +66,17 @@ class Auth {
                             callback(null)
                         }
                     }
+            } catch (e: NoCredentialException) {
+                activity.startActivity(
+                    Intent(Settings.ACTION_ADD_ACCOUNT)
+                        .putExtra(Settings.EXTRA_ACCOUNT_TYPES, arrayOf("com.google"))
+                )
+                currentUser = null
+                callback(null)
+            } catch (e: Exception) {
+                // Handle other exceptions
+                currentUser = null
+                callback(null)
             }
         }
 

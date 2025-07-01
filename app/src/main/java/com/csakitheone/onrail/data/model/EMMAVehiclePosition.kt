@@ -1,7 +1,10 @@
 package com.csakitheone.onrail.data.model
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import org.json.JSONObject
 
+@Parcelize
 data class EMMAVehiclePosition(
     val vehicleId: String = "",
     val lat: Double = 0.0,
@@ -10,12 +13,13 @@ data class EMMAVehiclePosition(
     val heading: Double = 0.0,
     val label: String = "",
     val trip: Trip = Trip(),
-) {
+) : Parcelable {
+    @Parcelize
     data class Trip(
         val gtfsId: String = "",
         val tripShortName: String = "",
         val tripHeadsign: String = "",
-    )
+    ) : Parcelable
 
     override fun toString(): String {
         // Convert the VehiclePosition to a JSON string representation
@@ -54,8 +58,7 @@ data class EMMAVehiclePosition(
                         tripHeadsign = tripJson.getString("tripHeadsign")
                     )
                 )
-            }
-            catch (_: Exception) {
+            } catch (_: Exception) {
                 return EMMAVehiclePosition() // Return a default instance if parsing fails
             }
         }
