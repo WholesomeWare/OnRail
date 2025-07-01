@@ -277,6 +277,26 @@ class TrainActivity : ComponentActivity() {
                         trainId = train.trip.tripShortName,
                         onMessageAdded = {
                             messages = (messages + it).sortedBy { msg -> msg.timestamp }
+
+                            if (intent.getBooleanExtra("bubble", false) && it.senderId != Auth.currentUser?.uid) {
+                                when (it.messageType) {
+                                    Message.TYPE_TEXT -> {
+                                        NotifUtils.showBubble(
+                                            this@TrainActivity,
+                                            train,
+                                            chatMessageSenderName = it.senderName,
+                                            chatMessage = it.content
+                                        )
+                                    }
+                                    Message.TYPE_REPORT -> {
+                                        NotifUtils.showBubble(
+                                            this@TrainActivity,
+                                            train,
+                                            chatMessage = "Új jelentés: ${it.content}"
+                                        )
+                                    }
+                                }
+                            }
                         },
                         onMessageRemoved = {
                             messages =

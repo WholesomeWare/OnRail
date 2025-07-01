@@ -46,7 +46,12 @@ class NotifUtils {
             shortcutManager = activity.getSystemService(ShortcutManager::class.java)
         }
 
-        fun showBubble(context: Context, train: EMMAVehiclePosition) {
+        fun showBubble(
+            context: Context,
+            train: EMMAVehiclePosition,
+            chatMessageSenderName: String = "Egy utazó",
+            chatMessage: String = "",
+        ) {
             val target = Intent(context, TrainActivity::class.java)
                 .setAction(Intent.ACTION_DEFAULT)
                 .putExtra("trainJson", train.toString())
@@ -86,6 +91,18 @@ class NotifUtils {
                     .build()
             }
 
+            val messagingStyle = Notification.MessagingStyle(trainBot)
+                .setConversationTitle(trainDisplayName)
+                .setGroupConversation(true)
+
+            if (chatMessage.isNotBlank()) {
+                messagingStyle.addMessage(
+                    chatMessage,
+                    System.currentTimeMillis(),
+                    Person.Builder().setName(chatMessageSenderName).build()
+                )
+            }
+
             val notification = Notification.Builder(context, CHANNEL_TRAIN_UPDATES)
                 .setContentTitle(trainDisplayName)
                 .setContentIntent(bubbleIntent)
@@ -94,9 +111,7 @@ class NotifUtils {
                 .setShortcutId(train.trip.gtfsId)
                 .setCategory(Notification.CATEGORY_MESSAGE)
                 .addPerson(trainBot)
-                .setStyle(
-                    Notification.MessagingStyle(trainBot)
-                )
+                .setStyle(messagingStyle)
                 .build()
 
             notificationManager.notify(train.trip.gtfsId.hashCode(), notification)
