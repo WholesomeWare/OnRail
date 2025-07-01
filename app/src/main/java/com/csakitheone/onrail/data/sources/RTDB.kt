@@ -1,5 +1,7 @@
 package com.csakitheone.onrail.data.sources
 
+import android.util.Log
+import androidx.compose.ui.platform.LocalGraphicsContext
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.model.Message
 import com.google.firebase.database.ChildEventListener
@@ -193,6 +195,35 @@ class RTDB {
                 ref.removeEventListener(it)
                 messageListener = null
             }
+        }
+
+        /**
+         * Clears messages older than the OLD_MESSAGE_CUTOFF.
+         * This function should only be called with an unmetered network connection
+         * and should only output its results to the console.
+         */
+        fun clearOldMessages() {
+            ref.child("trains").get()
+                .addOnSuccessListener { trainsSnapshot ->
+                    val oldMessageCutoff = System.currentTimeMillis() - OLD_MESSAGE_CUTOFF
+
+                    for (trainSnapshot in trainsSnapshot.children) {
+                        val messages = trainSnapshot.child("messages")
+
+                        if (!messages.exists()) continue
+
+                        for (messageSnapshot in messages.children) {
+                            val message = messageSnapshot.getValue(Message::class.java)
+                            if (message != null && message.timestamp < oldMessageCutoff) {
+                                ref.child("trains/${trainSnapshot.key}/messages/${message.timestamp}")
+                                    .removeValue()
+                                    .addOnSuccessListener {
+                                        Log.d("RTDB", "Removed old message: ${message.content} from train: ${trainSnapshot.key}")
+                                    }
+                            }
+                        }
+                    }
+                }
         }
     }
 }

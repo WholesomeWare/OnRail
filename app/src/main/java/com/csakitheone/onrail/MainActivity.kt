@@ -1,6 +1,8 @@
 package com.csakitheone.onrail
 
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.text.format.DateFormat
 import androidx.activity.ComponentActivity
@@ -124,6 +126,21 @@ class MainActivity : ComponentActivity() {
         LocalSettings.load(this)
 
         NotifUtils.init(this)
+
+        clearOldMessagesWhenNotMetered()
+    }
+
+    fun clearOldMessagesWhenNotMetered() {
+        val connectivityManager = getSystemService(ConnectivityManager::class.java)
+        val networkCapabilities =
+            connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+        val isUnmetered =
+            networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true
+        val hasInternet =
+            networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        if (hasInternet && isUnmetered) {
+            RTDB.clearOldMessages()
+        }
     }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -384,8 +401,7 @@ class MainActivity : ComponentActivity() {
                                 LoadingIndicator(
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
-                            }
-                            else {
+                            } else {
                                 Icon(
                                     imageVector = if (LocationUtils.current != LatLng.ZERO) Icons.Default.GpsFixed
                                     else Icons.Default.GpsNotFixed,
