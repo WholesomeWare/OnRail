@@ -25,8 +25,7 @@
             android:theme="@style/Theme.OnRail"
             android:windowSoftInputMode="adjustResize"
             android:allowEmbedded="true"
-            android:resizeableActivity="true"
-            android:documentLaunchMode="always" />
+            android:resizeableActivity="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

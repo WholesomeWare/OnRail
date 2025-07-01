@@ -4,29 +4,24 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.os.Bundle
 import android.text.format.DateFormat
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -35,7 +30,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
@@ -44,32 +38,23 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsOff
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedAssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -111,18 +96,12 @@ import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.fadingEdge
 import com.csakitheone.onrail.ui.theme.OnRailTheme
-import com.google.android.gms.location.LocationServices
-import ovh.plrapps.mapcompose.api.addLayer
 import ovh.plrapps.mapcompose.api.addMarker
-import ovh.plrapps.mapcompose.api.enableZooming
 import ovh.plrapps.mapcompose.api.removeAllMarkers
 import ovh.plrapps.mapcompose.api.scrollTo
 import ovh.plrapps.mapcompose.ui.MapUI
-import ovh.plrapps.mapcompose.ui.state.MapState
-import java.net.URL
 import java.util.Timer
 import kotlin.concurrent.timerTask
-import kotlin.math.pow
 
 class TrainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -141,7 +120,7 @@ class TrainActivity : ComponentActivity() {
     @Preview
     @Composable
     fun TrainScreen() {
-        val activity = LocalActivity.current
+        val coroutineScope = rememberCoroutineScope()
 
         val TAB_MAP = 0
         val TAB_CHAT = 1
@@ -151,6 +130,7 @@ class TrainActivity : ComponentActivity() {
         val mapState = remember { LocationUtils.getMapState() }
 
         var isLoading by remember { mutableStateOf(false) }
+        var isLoadingLocation by remember { mutableStateOf(false) }
         var selectedTab by remember { mutableIntStateOf(TAB_MAP) }
         var train by remember { mutableStateOf(EMMAVehiclePosition()) }
         var trainsLastUpdated by remember { mutableLongStateOf(0L) }
@@ -164,7 +144,7 @@ class TrainActivity : ComponentActivity() {
             }
         }
         var messages by remember { mutableStateOf(listOf<Message>()) }
-        val visibleMessages by remember(messages, selectedTab) {
+        val readableMessages by remember(messages, selectedTab) {
             derivedStateOf {
                 if (selectedTab == TAB_REPORTS_ONLY) {
                     messages.filter { it.messageType == Message.TYPE_REPORT }
@@ -184,23 +164,15 @@ class TrainActivity : ComponentActivity() {
         var isSendingMessage by remember { mutableStateOf(false) }
         var selectedMessage by remember { mutableStateOf<Message?>(null) }
 
-        LaunchedEffect(Unit) {
-            train = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
-            RTDB.getVehiclePositionsRelevance { trainsLastUpdated = it }
-        }
-
         LaunchedEffect(train, messages, selectedTab, LocationUtils.current) {
             val latestMessage = messages
                 .filter { it.location.isNotBlank() }
                 .maxByOrNull { it.timestamp }
             val trainLatLng = LatLng(train.lat, train.lon)
-            val latestLatLng = if (trainsLastUpdated > (latestMessage?.timestamp ?: 0L)) {
+            val latestLatLng = if ((latestMessage?.timestamp ?: 0L) > trainsLastUpdated) {
+                LatLng.fromString(latestMessage?.location)
+            } else {
                 trainLatLng
-            } else if (latestMessage != null) {
-                LatLng.fromString(latestMessage.location)
-            }
-            else {
-                LatLng(47.4979, 19.0402)
             }
 
             mapState.removeAllMarkers()
@@ -288,13 +260,15 @@ class TrainActivity : ComponentActivity() {
             )
         }
 
-        LaunchedEffect(visibleMessages) {
-            if (visibleMessages.isNotEmpty()) {
-                chatListState.animateScrollToItem(visibleMessages.lastIndex)
+        LaunchedEffect(readableMessages) {
+            if (readableMessages.isNotEmpty()) {
+                chatListState.animateScrollToItem(readableMessages.lastIndex)
             }
         }
 
         DisposableEffect(Unit) {
+            train = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
+
             RTDB.getMessages(
                 trainId = train.trip.tripShortName,
                 callback = { newMessages ->
@@ -568,7 +542,7 @@ class TrainActivity : ComponentActivity() {
                                     )
                                 }
 
-                                items(visibleMessages, { it.senderId + it.timestamp }) { message ->
+                                items(readableMessages, { it.senderId + it.timestamp }) { message ->
                                     MessageDisplay(
                                         modifier = Modifier.fillMaxWidth(),
                                         message = message,
