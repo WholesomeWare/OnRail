@@ -50,6 +50,7 @@ import kotlin.concurrent.timerTask
 @Composable
 fun ProfileIcon(
     modifier: Modifier = Modifier,
+    showGreeting: Boolean = false,
 ) {
     val activity = LocalActivity.current
 
@@ -67,7 +68,7 @@ fun ProfileIcon(
         if (Auth.currentUser == null) return@LaunchedEffect
 
         greetingText = "Helló,\n${Auth.currentUser?.displayName ?: "ismeretlen felhasználó"}!"
-        isGreetingEnabled = true
+        isGreetingEnabled = showGreeting
 
         Timer().schedule(timerTask {
             isGreetingEnabled = false

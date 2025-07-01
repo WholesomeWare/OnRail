@@ -41,6 +41,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -132,6 +133,8 @@ class TrainActivity : ComponentActivity() {
         }
 
         LocationUtils.register(this)
+
+        NotifUtils.init(this)
     }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -428,13 +431,15 @@ class TrainActivity : ComponentActivity() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                IconButton(
-                                    onClick = { finish() },
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                                        contentDescription = null
-                                    )
+                                if (!intent.getBooleanExtra("bubble", false)) {
+                                    IconButton(
+                                        onClick = { finish() },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                                            contentDescription = null
+                                        )
+                                    }
                                 }
                                 Column(
                                     modifier = Modifier.weight(1f),
@@ -449,6 +454,19 @@ class TrainActivity : ComponentActivity() {
                                         text = trainsLastUpdatedText,
                                         style = MaterialTheme.typography.labelMedium,
                                     )
+                                }
+                                if (!intent.getBooleanExtra("bubble", false)) {
+                                    IconButton(
+                                        onClick = {
+                                            NotifUtils.showBubble(this@TrainActivity, train)
+                                            finish()
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.BubbleChart,
+                                            contentDescription = null
+                                        )
+                                    }
                                 }
                             }
                         }

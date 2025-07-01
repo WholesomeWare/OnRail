@@ -122,6 +122,8 @@ class MainActivity : ComponentActivity() {
 
         LocationUtils.register(this)
         LocalSettings.load(this)
+
+        NotifUtils.init(this)
     }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -305,7 +307,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-                        ProfileIcon()
+                        ProfileIcon(showGreeting = true)
                     }
 
                     if (motdText.isNotEmpty()) {
