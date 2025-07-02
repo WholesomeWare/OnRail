@@ -15,21 +15,35 @@ class LocalSettings {
                 return
             }
             val json = settingsFile.readText()
-            isSendingLocationEnabled =
-                json.substringAfter("\"isSendingLocationEnabled\": ")[0] == 't'
+            if (json.contains("\"isSendingLocationEnabled\": ")) {
+                isSendingLocationEnabled =
+                    json.substringAfter("\"isSendingLocationEnabled\": ").first() == 't'
+            }
+            if (json.contains("\"savedTrainTripNames\":")) {
+                savedTrainTripNames = json.substringAfter("\"savedTrainTripNames\": [")
+                    .substringBefore("]").split(",").map { it.trim().removeSurrounding("\"") }
+                    .filter { it.isNotEmpty() }.toSet()
+            }
         }
 
         fun save(context: Context) {
             val settingsFile = File(context.dataDir, "settings.json")
             val json = """
                 {
-                    "isSendingLocationEnabled": $isSendingLocationEnabled
+                    "isSendingLocationEnabled": $isSendingLocationEnabled,
+                    "savedTrainTripNames": ${
+                savedTrainTripNames.joinToString(
+                    prefix = "[",
+                    postfix = "]"
+                ) { "\"$it\"" }
+            }
                 }
             """
             settingsFile.writeText(json)
         }
 
         var isSendingLocationEnabled by mutableStateOf(false)
+        var savedTrainTripNames by mutableStateOf(emptySet<String>())
 
     }
 }

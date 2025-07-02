@@ -5,20 +5,27 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -45,6 +52,8 @@ import com.csakitheone.onrail.LocationUtils
 import com.csakitheone.onrail.data.Auth
 import com.csakitheone.onrail.data.sources.LocalSettings
 import androidx.core.net.toUri
+import com.csakitheone.onrail.TrainActivity
+import com.csakitheone.onrail.data.TrainsProvider
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.util.Timer
@@ -54,6 +63,7 @@ import kotlin.concurrent.timerTask
 fun ProfileIcon(
     modifier: Modifier = Modifier,
     showGreeting: Boolean = false,
+    extraDropdownMenuItems: @Composable (dismiss: () -> Unit) -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     val activity = LocalActivity.current
@@ -61,6 +71,7 @@ fun ProfileIcon(
     var isGreetingEnabled by remember { mutableStateOf(false) }
     var greetingText by remember { mutableStateOf("") }
     var isMenuOpen by remember { mutableStateOf(false) }
+    var isSavedTrainsMenuOpen by remember { mutableStateOf(false) }
     var appVersionInfo by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -107,6 +118,10 @@ fun ProfileIcon(
                         text = "Bejelentkezve mint:\n${Auth.currentUser?.displayName ?: "ismeretlen felhasználó"}",
                         style = MaterialTheme.typography.bodySmall,
                     )
+
+                    HorizontalDivider()
+                    extraDropdownMenuItems { isMenuOpen = false }
+                    HorizontalDivider()
                 }
                 DropdownMenuItem(
                     onClick = {

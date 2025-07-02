@@ -5,6 +5,8 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -35,9 +37,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.MoreVert
@@ -326,7 +331,102 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-                        ProfileIcon(showGreeting = true)
+                        ProfileIcon(
+                            showGreeting = true,
+                            extraDropdownMenuItems = { dismiss ->
+                                var isSavedTrainsMenuOpen by remember { mutableStateOf(false) }
+
+                                DropdownMenuItem(
+                                    onClick = {
+                                        isSavedTrainsMenuOpen = true
+                                    },
+                                    text = {
+                                        Text(text = "Mentett vonatok")
+                                        DropdownMenu(
+                                            expanded = isSavedTrainsMenuOpen,
+                                            onDismissRequest = { isSavedTrainsMenuOpen = false },
+                                            modifier = Modifier.widthIn(max = 300.dp),
+                                        ) {
+                                            if (LocalSettings.savedTrainTripNames.isEmpty()) {
+                                                DropdownMenuItem(
+                                                    enabled = false,
+                                                    onClick = { isSavedTrainsMenuOpen = false },
+                                                    text = { Text(text = "Nincsenek mentett vonatok") },
+                                                )
+                                            } else {
+                                                LocalSettings.savedTrainTripNames.forEach { trainTripName ->
+                                                    DropdownMenuItem(
+                                                        enabled = trains.any { it.trip.tripShortName == trainTripName },
+                                                        onClick = {
+                                                            val train =
+                                                                trains.firstOrNull { it.trip.tripShortName == trainTripName }
+
+                                                            if (train == null) {
+                                                                Toast.makeText(
+                                                                    this@MainActivity,
+                                                                    "A vonat jelenleg nem elérhető",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            } else {
+                                                                startActivity(
+                                                                    Intent(
+                                                                        this@MainActivity,
+                                                                        TrainActivity::class.java
+                                                                    ).putExtra(
+                                                                        "trainJson",
+                                                                        train.toString()
+                                                                    )
+                                                                )
+                                                            }
+
+                                                            isSavedTrainsMenuOpen = false
+                                                            dismiss()
+                                                        },
+                                                        text = { Text(text = trainTripName) },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Train,
+                                                                contentDescription = null
+                                                            )
+                                                        },
+                                                    )
+                                                }
+                                                HorizontalDivider()
+                                                DropdownMenuItem(
+                                                    onClick = {
+                                                        LocalSettings.savedTrainTripNames =
+                                                            emptySet()
+                                                        LocalSettings.save(this@MainActivity)
+
+                                                        isSavedTrainsMenuOpen = false
+                                                        dismiss()
+                                                    },
+                                                    text = { Text(text = "Összes törlése") },
+                                                    trailingIcon = {
+                                                        Icon(
+                                                            imageVector = Icons.Default.ClearAll,
+                                                            contentDescription = null
+                                                        )
+                                                    },
+                                                )
+                                            }
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Bookmarks,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Default.ArrowRight,
+                                            contentDescription = null
+                                        )
+                                    },
+                                )
+                            },
+                        )
                     }
 
                     if (motdText.isNotEmpty()) {
