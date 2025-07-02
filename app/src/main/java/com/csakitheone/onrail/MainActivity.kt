@@ -263,7 +263,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         Badge {
-                            Text(text = train.trip.tripShortName.substringBefore(" "))
+                            Text(text = train.trip.tripShortName)
                         }
                     }
                 }
