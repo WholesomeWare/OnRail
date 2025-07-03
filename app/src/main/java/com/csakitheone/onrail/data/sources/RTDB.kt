@@ -98,33 +98,6 @@ class RTDB {
                 }
         }
 
-        fun getMessages(
-            trainId: String,
-            callback: (List<Message>) -> Unit
-        ) {
-            ref.child("trains/$trainId/messages")
-                .orderByKey()
-                .get()
-                .addOnSuccessListener { snapshot ->
-                    if (!snapshot.exists()) {
-                        callback(emptyList())
-                        return@addOnSuccessListener
-                    }
-                    val messages = snapshot.children.mapNotNull { it.getValue(Message::class.java) }
-                    val oldMessageCutoff = System.currentTimeMillis() - OLD_MESSAGE_CUTOFF
-                    val recentMessages = messages.filter { it.timestamp >= oldMessageCutoff }
-                    val oldMessages = messages.filter { it.timestamp < oldMessageCutoff }
-
-                    oldMessages.forEach { message ->
-                        ref.child("trains/$trainId/messages/${message.timestamp}").removeValue()
-                    }
-
-                    callback(recentMessages.sortedByDescending { it.timestamp })
-                }.addOnFailureListener {
-                    callback(emptyList())
-                }
-        }
-
         fun sendMessage(
             trainId: String,
             message: Message,
@@ -197,6 +170,26 @@ class RTDB {
             }
         }
 
+        fun getAllReports(callback: (List<Message>) -> Unit) {
+            ref.child("trains").get()
+                .addOnSuccessListener { trainsSnapshot ->
+                    val reports = trainsSnapshot.children.flatMap { trainSnapshot ->
+                        val messages = trainSnapshot.child("messages")
+                        messages.children.mapNotNull { messageSnapshot ->
+                            val message = messageSnapshot.getValue(Message::class.java)
+                            if (message != null && message.messageType == Message.TYPE_REPORT) {
+                                message
+                            } else {
+                                null
+                            }
+                        }
+                    }
+                    callback(reports)
+                }.addOnFailureListener {
+                    callback(emptyList())
+                }
+        }
+
         /**
          * Clears messages older than the OLD_MESSAGE_CUTOFF.
          * This function should only be called with an unmetered network connection
@@ -218,7 +211,10 @@ class RTDB {
                                 ref.child("trains/${trainSnapshot.key}/messages/${message.timestamp}")
                                     .removeValue()
                                     .addOnSuccessListener {
-                                        Log.d("RTDB", "Removed old message: ${message.content} from train: ${trainSnapshot.key}")
+                                        Log.d(
+                                            "RTDB",
+                                            "Removed old message: ${message.content} from train: ${trainSnapshot.key}"
+                                        )
                                     }
                             }
                         }
