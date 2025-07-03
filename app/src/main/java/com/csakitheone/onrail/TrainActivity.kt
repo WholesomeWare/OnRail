@@ -86,6 +86,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -124,6 +125,7 @@ class TrainActivity : ComponentActivity() {
     @Preview
     @Composable
     fun TrainScreen() {
+        val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
 
         val TAB_MAP = 0
@@ -131,7 +133,7 @@ class TrainActivity : ComponentActivity() {
         val TAB_REPORTS_ONLY = 2
 
         val chatListState = rememberLazyListState()
-        val mapState = remember { LocationUtils.getMapState() }
+        val mapState = remember { LocationUtils.getMapState(context) }
 
         var isLoading by remember { mutableStateOf(false) }
         var selectedTab by remember { mutableIntStateOf(TAB_MAP) }
@@ -206,11 +208,16 @@ class TrainActivity : ComponentActivity() {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Train,
-                        contentDescription = "Train position",
-                        tint = MaterialTheme.colorScheme.secondary,
-                    )
+                    FilledIconButton(
+                        onClick = {
+                            //TODO: Open info about train
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Train,
+                            contentDescription = "Train position",
+                        )
+                    }
                     Badge {
                         Text(text = "MÁV szerinti pozíció")
                     }
@@ -224,7 +231,7 @@ class TrainActivity : ComponentActivity() {
                 .forEachIndexed { index, msg ->
                     val latLng = LatLng.fromString(msg.location)
                     val time = DateFormat.format("HH:mm", msg.timestamp)
-                    val alpha = 1f / (index + 1)
+                    val alpha = 1f / (index + 2) * 2
                     mapState.addMarker(
                         id = "${msg.senderId}-${msg.timestamp}",
                         x = latLng.normalized.longitude,
