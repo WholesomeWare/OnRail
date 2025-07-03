@@ -1,6 +1,7 @@
 package com.csakitheone.onrail.ui.components
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -33,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -52,6 +57,7 @@ import com.csakitheone.onrail.LocationUtils
 import com.csakitheone.onrail.data.Auth
 import com.csakitheone.onrail.data.sources.LocalSettings
 import androidx.core.net.toUri
+import com.csakitheone.onrail.R
 import com.csakitheone.onrail.TrainActivity
 import com.csakitheone.onrail.data.TrainsProvider
 import kotlinx.coroutines.coroutineScope
@@ -71,7 +77,7 @@ fun ProfileIcon(
     var isGreetingEnabled by remember { mutableStateOf(false) }
     var greetingText by remember { mutableStateOf("") }
     var isMenuOpen by remember { mutableStateOf(false) }
-    var isSavedTrainsMenuOpen by remember { mutableStateOf(false) }
+    var isAboutDialogOpen by remember { mutableStateOf(false) }
     var appVersionInfo by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -88,6 +94,50 @@ fun ProfileIcon(
         Timer().schedule(timerTask {
             isGreetingEnabled = false
         }, 5000L)
+    }
+
+    if (isAboutDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { isAboutDialogOpen = false },
+            title = { Text(text = "${stringResource(R.string.app_name)} $appVersionInfo") },
+            text = {
+                Text(
+                    text = "A Sínen Vagyunk közösségi vasút információs alkalmazás nem hivatalos " +
+                            "és nem áll kapcsolatban a MÁV Csoporttal. Az alkalmazásban megjelenő " +
+                            "információk a közösség által megosztott adatokon alapulnak, " +
+                            "és nem garantált a pontosságuk."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        activity?.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                "https://github.com/WholesomeWare/OnRail".toUri()
+                            )
+                        )
+                    },
+                ) {
+                    Text(text = "GitHub")
+                }
+                TextButton(
+                    onClick = {
+                        activity?.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                "https://play.google.com/store/apps/details?id=com.csakitheone.onrail".toUri()
+                            )
+                        )
+                    },
+                ) {
+                    Text(text = "Play Áruház")
+                }
+                TextButton(onClick = { isAboutDialogOpen = false }) {
+                    Text(text = "Ok")
+                }
+            },
+        )
     }
 
     ExtendedFloatingActionButton(
@@ -119,9 +169,7 @@ fun ProfileIcon(
                         style = MaterialTheme.typography.bodySmall,
                     )
 
-                    HorizontalDivider()
                     extraDropdownMenuItems { isMenuOpen = false }
-                    HorizontalDivider()
                 }
                 DropdownMenuItem(
                     onClick = {
@@ -148,23 +196,18 @@ fun ProfileIcon(
                         )
                     },
                 )
-                HorizontalDivider()
-                Text(
-                    modifier = Modifier.padding(16.dp),
-                    text = "App verzió\n$appVersionInfo\n\nUID (Csákin kívül ne oszd meg senkivel!)\n${Auth.currentUser?.uid ?: "-"}",
-                    style = MaterialTheme.typography.bodySmall,
-                )
                 DropdownMenuItem(
                     onClick = {
+                        isAboutDialogOpen = true
                         isMenuOpen = false
-                        activity?.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                "https://play.google.com/store/apps/details?id=com.csakitheone.onrail".toUri()
-                            )
+                    },
+                    text = { Text(text = "Névjegy") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null
                         )
                     },
-                    text = { Text(text = "Play Áruház megnyitása") },
                 )
             }
         },
