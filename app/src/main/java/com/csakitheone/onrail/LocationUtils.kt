@@ -117,11 +117,8 @@ class LocationUtils {
                     }
 
                     if (cacheFile.exists()) {
-                        Log.i("MapState", "Using cached tile: zoom=$zoom, col=$col, row=$row")
                         return@addLayer cacheFile.inputStream()
                     }
-
-                    Log.i("MapState", "Downloading tile: zoom=$zoom, col=$col, row=$row")
 
                     runCatching {
                         val inputStream = URL("https://tile.openstreetmap.org/${zoom}/${col}/${row}.png")
@@ -132,8 +129,6 @@ class LocationUtils {
                         FileOutputStream(cacheFile).use { outputStream ->
                             inputStream.copyTo(outputStream)
                         }
-
-                        Log.i("MapState", "Tile downloaded")
 
                         cacheFile.inputStream()
                     }.getOrNull()
