@@ -101,6 +101,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -162,8 +163,9 @@ class MainActivity : ComponentActivity() {
     @Preview
     @Composable
     fun MainScreen() {
+        val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
-        val mapState = remember { LocationUtils.getMapState() }
+        val mapState = remember { LocationUtils.getMapState(context) }
 
         var motdText by remember { mutableStateOf("") }
         var isLoading by remember { mutableStateOf(true) }

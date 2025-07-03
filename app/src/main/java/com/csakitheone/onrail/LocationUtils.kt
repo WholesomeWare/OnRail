@@ -17,6 +17,9 @@ import com.google.android.gms.location.Priority
 import ovh.plrapps.mapcompose.api.addLayer
 import ovh.plrapps.mapcompose.api.enableZooming
 import ovh.plrapps.mapcompose.ui.state.MapState
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 import java.net.URL
 import kotlin.math.PI
 import kotlin.math.ln
@@ -99,7 +102,7 @@ class LocationUtils {
                 }
         }
 
-        fun getMapState(): MapState {
+        fun getMapState(context: Context): MapState {
             val level = 18
             return MapState(
                 levelCount = level,
@@ -107,11 +110,32 @@ class LocationUtils {
                 fullHeight = 2.0.pow(7 + level).toInt(),
             ).apply {
                 addLayer({ row, col, zoom ->
+                    val cacheFile = File(context.cacheDir, "tiles/tile_${zoom}_${col}_${row}.png")
+
+                    if (cacheFile.parentFile?.exists() == false) {
+                        cacheFile.parentFile?.mkdirs()
+                    }
+
+                    if (cacheFile.exists()) {
+                        Log.i("MapState", "Using cached tile: zoom=$zoom, col=$col, row=$row")
+                        return@addLayer cacheFile.inputStream()
+                    }
+
+                    Log.i("MapState", "Downloading tile: zoom=$zoom, col=$col, row=$row")
+
                     runCatching {
-                        URL("https://tile.openstreetmap.org/${zoom}/${col}/${row}.png")
+                        val inputStream = URL("https://tile.openstreetmap.org/${zoom}/${col}/${row}.png")
                             .openConnection()
                             .apply { setRequestProperty("User-Agent", "OnRailApp/1.0") }
                             .inputStream
+
+                        FileOutputStream(cacheFile).use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+
+                        Log.i("MapState", "Tile downloaded")
+
+                        cacheFile.inputStream()
                     }.getOrNull()
                 })
 
