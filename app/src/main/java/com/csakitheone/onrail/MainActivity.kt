@@ -13,6 +13,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -96,6 +99,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -108,6 +112,8 @@ import com.csakitheone.onrail.data.sources.LocalSettings
 import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.theme.OnRailTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ovh.plrapps.mapcompose.api.addClusterer
 import ovh.plrapps.mapcompose.api.addMarker
@@ -252,15 +258,36 @@ class MainActivity : ComponentActivity() {
                     renderingStrategy = RenderingStrategy.Clustering("trains"),
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val viewConfiguration = LocalViewConfiguration.current
+                        LaunchedEffect(interactionSource) {
+                            var isLongPress = false
+                            interactionSource.interactions.collectLatest {
+                                when (it) {
+                                    is PressInteraction.Press -> {
+                                        isLongPress = false
+                                        delay(viewConfiguration.longPressTimeoutMillis)
+                                        isLongPress = true
+                                    }
+                                    is PressInteraction.Release -> {
+                                        if (isLongPress) {
+                                            NotifUtils.showBubble(this@MainActivity, train)
+                                        } else {
+                                            startActivity(
+                                                Intent(
+                                                    this@MainActivity,
+                                                    TrainActivity::class.java
+                                                ).putExtra("trainJson", train.toString())
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         FilledIconButton(
-                            onClick = {
-                                startActivity(
-                                    Intent(
-                                        this@MainActivity,
-                                        TrainActivity::class.java
-                                    ).putExtra("trainJson", train.toString())
-                                )
-                            },
+                            onClick = {},
+                            interactionSource = interactionSource,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Train,
