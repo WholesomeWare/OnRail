@@ -148,6 +148,7 @@ class TrainActivity : ComponentActivity() {
                 }
             }
         }
+        var isTrainInfoDialogOpen by remember { mutableStateOf(false) }
         var messages by remember { mutableStateOf(listOf<Message>()) }
         val readableMessages by remember(messages, selectedTab) {
             derivedStateOf {
@@ -210,7 +211,7 @@ class TrainActivity : ComponentActivity() {
                 ) {
                     FilledIconButton(
                         onClick = {
-                            //TODO: Open info about train
+                            isTrainInfoDialogOpen = true
                         },
                     ) {
                         Icon(
@@ -334,6 +335,31 @@ class TrainActivity : ComponentActivity() {
         }
 
         OnRailTheme {
+            if (isTrainInfoDialogOpen) {
+                AlertDialog(
+                    onDismissRequest = { isTrainInfoDialogOpen = false },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Train,
+                            contentDescription = "Train info",
+                        )
+                    },
+                    title = { Text(text = train.trip.tripShortName) },
+                    text = {
+                        Text(
+                            text = "Végállomás: ${train.trip.tripHeadsign}\n\n" +
+                                    "Jelenlegi pozíció:\n${train.lat}, ${train.lon}\n\n" +
+                                    "Sebesség: ${train.speed}"
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { isTrainInfoDialogOpen = false }) {
+                            Text("Bezárás")
+                        }
+                    },
+                )
+            }
+
             if (selectedMessage != null) {
                 AlertDialog(
                     onDismissRequest = { selectedMessage = null },
