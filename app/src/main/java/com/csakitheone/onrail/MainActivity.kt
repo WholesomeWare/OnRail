@@ -446,6 +446,7 @@ class MainActivity : ComponentActivity() {
                                     },
                                     text = trainsLastUpdatedText,
                                     style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
                                 )
                             }
                         }
