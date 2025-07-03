@@ -49,7 +49,9 @@ import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.AlertDialog
@@ -100,7 +102,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -269,6 +273,7 @@ class MainActivity : ComponentActivity() {
                                         delay(viewConfiguration.longPressTimeoutMillis)
                                         isLongPress = true
                                     }
+
                                     is PressInteraction.Release -> {
                                         if (isLongPress) {
                                             NotifUtils.showBubble(this@MainActivity, train)
@@ -308,9 +313,92 @@ class MainActivity : ComponentActivity() {
                     onDismissRequest = { isUpdateInfoDialogOpen = false },
                     title = { Text(text = trainsLastUpdatedText) },
                     text = {
-                        Text(
-                            text = "Az alkalmazás nem közvetlen a MÁV szerveréről kérdezi le a vonatok adatait, hanem egy saját szerveren keresztül. Az utolsó frissítés ideje azt jelenti, hogy mikor kérte le a saját szerver a vonatok adatait a MÁV szerveréről.",
-                        )
+                        Column {
+                            Text(
+                                text = "Az alkalmazás nem közvetlen a MÁV szerveréről kérdezi le " +
+                                        "a vonatok adatait, hanem egy saját szerveren keresztül. " +
+                                        "Az utolsó frissítés ideje azt jelenti, hogy mikor kérte " +
+                                        "le a saját szerver a vonatok adatait a MÁV szerveréről.",
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PhoneAndroid,
+                                        contentDescription = null,
+                                    )
+                                    Text(
+                                        text = "Utas telója",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Remove,
+                                        contentDescription = null,
+                                    )
+                                    Text(
+                                        text = "Firebase SDK",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_database_24px),
+                                        contentDescription = null,
+                                    )
+                                    Text(
+                                        text = "Saját szerver",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Remove,
+                                        contentDescription = null,
+                                    )
+                                    Text(
+                                        text = "EMMA API",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_host_24px),
+                                        contentDescription = null,
+                                    )
+                                    Text(
+                                        text = "MÁV szerver",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                            }
+                        }
                     },
                     confirmButton = {
                         TextButton(onClick = { isUpdateInfoDialogOpen = false }) {
@@ -353,6 +441,9 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Text(stringResource(R.string.app_name))
                                 Text(
+                                    modifier = Modifier.clickable {
+                                        isUpdateInfoDialogOpen = true
+                                    },
                                     text = trainsLastUpdatedText,
                                     style = MaterialTheme.typography.labelMedium,
                                 )
