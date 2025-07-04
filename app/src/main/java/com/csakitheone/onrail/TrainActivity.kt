@@ -117,8 +117,9 @@ class TrainActivity : ComponentActivity() {
         }
 
         LocationUtils.register(this)
-
         NotifUtils.init(this)
+        PowerUtils.init(this)
+        LocalSettings.load(this)
     }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

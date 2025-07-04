@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.os.PowerManager
 import android.text.format.DateFormat
 import android.util.Log
 import android.widget.Toast
@@ -139,9 +140,9 @@ class MainActivity : ComponentActivity() {
         }
 
         LocationUtils.register(this)
-        LocalSettings.load(this)
-
         NotifUtils.init(this)
+        PowerUtils.init(this)
+        LocalSettings.load(this)
 
         clearOldMessagesWhenNotMetered()
     }

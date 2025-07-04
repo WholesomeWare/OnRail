@@ -112,12 +112,16 @@ class LocationUtils {
                 addLayer({ row, col, zoom ->
                     val cacheFile = File(context.cacheDir, "tiles/tile_${zoom}_${col}_${row}.png")
 
-                    if (cacheFile.parentFile?.exists() == false) {
-                        cacheFile.parentFile?.mkdirs()
-                    }
-
                     if (cacheFile.exists()) {
                         return@addLayer cacheFile.inputStream()
+                    }
+
+                    if (PowerUtils.isPowerSaveMode) {
+                        return@addLayer null
+                    }
+
+                    if (cacheFile.parentFile?.exists() == false) {
+                        cacheFile.parentFile?.mkdirs()
                     }
 
                     runCatching {
