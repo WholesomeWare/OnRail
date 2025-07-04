@@ -275,12 +275,11 @@ class MainActivity : ComponentActivity() {
                                         isLongPress = false
                                         delay(viewConfiguration.longPressTimeoutMillis)
                                         isLongPress = true
+                                        NotifUtils.showBubble(this@MainActivity, train)
                                     }
 
                                     is PressInteraction.Release -> {
-                                        if (isLongPress) {
-                                            NotifUtils.showBubble(this@MainActivity, train)
-                                        } else {
+                                        if (!isLongPress) {
                                             startActivity(
                                                 Intent(
                                                     this@MainActivity,

@@ -5,8 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -20,12 +20,12 @@
         android:theme="@style/Theme.OnRail">
         <activity
             android:name=".TrainActivity"
+            android:allowEmbedded="true"
             android:exported="false"
             android:label="@string/title_activity_train"
+            android:resizeableActivity="true"
             android:theme="@style/Theme.OnRail"
-            android:windowSoftInputMode="adjustResize"
-            android:allowEmbedded="true"
-            android:resizeableActivity="true" />
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

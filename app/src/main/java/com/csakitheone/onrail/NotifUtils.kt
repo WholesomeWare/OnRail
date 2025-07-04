@@ -55,9 +55,13 @@ class NotifUtils {
             val target = Intent(context, TrainActivity::class.java)
                 .setAction(Intent.ACTION_DEFAULT)
                 .putExtra("trainJson", train.toString())
-                .putExtra("bubble", true)
             val bubbleIntent =
-                PendingIntent.getActivity(context, 0, target, PendingIntent.FLAG_MUTABLE)
+                PendingIntent.getActivity(
+                    context,
+                    train.trip.gtfsId.hashCode(),
+                    target.putExtra("bubble", true),
+                    PendingIntent.FLAG_MUTABLE
+                )
 
             val trainDisplayName = train.trip.tripShortName
             val trainBot = Person.Builder()
@@ -71,7 +75,6 @@ class NotifUtils {
                 .setShortLabel(trainDisplayName)
                 .build()
 
-            shortcutManager.removeAllDynamicShortcuts()
             shortcutManager.addDynamicShortcuts(listOf(shortcut))
 
             val bubbleData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
