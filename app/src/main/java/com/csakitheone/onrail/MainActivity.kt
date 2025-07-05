@@ -141,23 +141,6 @@ class MainActivity : ComponentActivity() {
 
         LocationUtils.register(this)
         NotifUtils.init(this)
-        PowerUtils.init(this)
-        LocalSettings.load(this)
-
-        clearOldMessagesWhenNotMetered()
-    }
-
-    fun clearOldMessagesWhenNotMetered() {
-        val connectivityManager = getSystemService(ConnectivityManager::class.java)
-        val networkCapabilities =
-            connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-        val isUnmetered =
-            networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true
-        val hasInternet =
-            networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        if (hasInternet && isUnmetered) {
-            RTDB.clearOldMessages()
-        }
     }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
