@@ -80,7 +80,7 @@ class NotifUtils {
             val bubbleData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 Notification.BubbleMetadata.Builder(
                     bubbleIntent,
-                    Icon.createWithResource(context, R.drawable.ic_launcher_foreground)
+                    Icon.createWithResource(context, R.drawable.ic_train_24px)
                 )
                     .setDesiredHeight(720)
                     .setAutoExpandBubble(true)
@@ -88,7 +88,7 @@ class NotifUtils {
             } else {
                 Notification.BubbleMetadata.Builder()
                     .setIntent(bubbleIntent)
-                    .setIcon(Icon.createWithResource(context, R.drawable.ic_launcher_foreground))
+                    .setIcon(Icon.createWithResource(context, R.drawable.ic_train_24px))
                     .setDesiredHeight(720)
                     .setAutoExpandBubble(true)
                     .build()
@@ -109,7 +109,7 @@ class NotifUtils {
             val notification = Notification.Builder(context, CHANNEL_TRAIN_UPDATES)
                 .setContentTitle(trainDisplayName)
                 .setContentIntent(bubbleIntent)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.drawable.ic_train_24px)
                 .setBubbleMetadata(bubbleData)
                 .setShortcutId(train.trip.gtfsId)
                 .setCategory(Notification.CATEGORY_MESSAGE)
