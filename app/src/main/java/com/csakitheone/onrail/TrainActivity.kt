@@ -258,11 +258,7 @@ class TrainActivity : ComponentActivity() {
                                 },
                             ) {
                                 Icon(
-                                    imageVector = when (msg.messageType) {
-                                        Message.TYPE_REPORT -> Icons.Default.Report
-                                        Message.TYPE_TEXT -> Icons.Default.ChatBubble
-                                        else -> Icons.Default.GpsFixed
-                                    },
+                                    imageVector = Message.getImageVector(msg),
                                     contentDescription = null,
                                 )
                             }
@@ -557,7 +553,7 @@ class TrainActivity : ComponentActivity() {
                                 },
                                 icon = {
                                     Icon(
-                                        imageVector = Icons.Default.Report,
+                                        imageVector = Message.getImageVector(reportOption),
                                         contentDescription = null,
                                     )
                                 },

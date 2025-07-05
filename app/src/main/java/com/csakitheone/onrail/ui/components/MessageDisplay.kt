@@ -59,7 +59,7 @@ fun MessageDisplay(
                     leadingIcon = {
                         Icon(
                             modifier = Modifier.size(AssistChipDefaults.IconSize),
-                            imageVector = Icons.Default.Report,
+                            imageVector = Message.getImageVector(message),
                             contentDescription = null,
                         )
                     },

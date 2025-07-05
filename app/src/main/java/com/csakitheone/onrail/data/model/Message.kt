@@ -1,7 +1,22 @@
 package com.csakitheone.onrail.data.model
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.Emergency
+import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.LocalPolice
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SevereCold
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.graphics.toColorInt
 
 data class Message(
@@ -62,11 +77,11 @@ data class Message(
             color = COLOR_WARNING,
         )
         val REPORT_TEMPERATURE_HIGH = report(
-            content = "Magas hőmérséklet",
+            content = "Nincs légkondi / magas hőmérséklet",
             color = COLOR_WARNING,
         )
         val REPORT_TEMPERATURE_LOW = report(
-            content = "Alacsony hőmérséklet",
+            content = "Nincs fűtés / alacsony hőmérséklet",
             color = COLOR_WARNING,
         )
         val REPORT_POLICE_ACTIVITY = report(
@@ -88,5 +103,47 @@ data class Message(
             REPORT_TEMPERATURE_LOW,
             REPORT_POLICE_ACTIVITY,
         )
+
+        fun getImageVector(message: Message): ImageVector {
+            return when (message.messageType) {
+                TYPE_REPORT -> {
+                    when (message.content) {
+                        REPORT_OPTION_DELAY_MINOR.content,
+                        REPORT_OPTION_DELAY_MODERATE.content,
+                        REPORT_OPTION_DELAY_MAJOR.content -> Icons.Default.Schedule
+
+                        REPORT_TRAIN_STOPPED.content -> Icons.Default.Pause
+
+                        REPORT_TRACK_BLOCKED.content -> Icons.Default.Block
+
+                        REPORT_TECHNICAL_ISSUE.content -> Icons.Default.ElectricBolt
+
+                        REPORT_EMERGENCY_ACCIDENT.content -> Icons.Default.Emergency
+
+                        REPORT_CROWDING.content -> Icons.Default.People
+
+                        REPORT_TEMPERATURE_HIGH.content -> Icons.Default.LocalFireDepartment
+
+                        REPORT_TEMPERATURE_LOW.content -> Icons.Default.SevereCold
+
+                        REPORT_POLICE_ACTIVITY.content -> Icons.Default.LocalPolice
+
+                        else -> Icons.Default.Report
+                    }
+                }
+
+                TYPE_LOCATION_PING -> {
+                    Icons.Default.GpsFixed
+                }
+
+                TYPE_TEXT -> {
+                    Icons.Default.ChatBubble
+                }
+
+                else -> {
+                    Icons.AutoMirrored.Default.Help
+                }
+            }
+        }
     }
 }
