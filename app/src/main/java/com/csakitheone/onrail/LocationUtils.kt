@@ -32,7 +32,7 @@ class LocationUtils {
         var current by mutableStateOf(LatLng.ZERO)
             private set
 
-        private lateinit var locationPermissionRequest: ActivityResultLauncher<Array<String>>
+        private var locationPermissionRequest: ActivityResultLauncher<Array<String>>? = null
         private var onPermissionGranted: ((Boolean) -> Unit) = {
             Log.e("LocationUtils", "Permission request callback not set")
         }
@@ -49,7 +49,7 @@ class LocationUtils {
         fun requestPermissions(callback: (Boolean) -> Unit) {
             onPermissionGranted = callback
 
-            locationPermissionRequest.launch(
+            locationPermissionRequest?.launch(
                 arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION

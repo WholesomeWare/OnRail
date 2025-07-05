@@ -321,8 +321,18 @@ class TrainActivity : ComponentActivity() {
                 schedule(timerTask {
                     isLoading = true
                     TrainsProvider.getTrains(this@TrainActivity) { newTrains, lastUpdated ->
-                        train = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
-                            ?: EMMAVehiclePosition()
+                        val newTrain = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
+
+                        if (newTrain == null) {
+                            Toast.makeText(
+                                this@TrainActivity,
+                                "A vonat nem található!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            finish()
+                            return@getTrains
+                        }
+                        train = newTrain
                         trainsLastUpdated = lastUpdated
                         isLoading = false
                     }
@@ -834,7 +844,7 @@ class TrainActivity : ComponentActivity() {
                                             messageText = ""
 
                                             if (LocalSettings.isSendingLocationEnabled) {
-                                                LocationUtils.getLastKnownLocation(this@TrainActivity) { latLng ->
+                                                LocationUtils.getCurrentLocation(this@TrainActivity) { latLng ->
                                                     RTDB.sendMessage(
                                                         trainId = train.trip.tripShortName,
                                                         message = message.copy(
