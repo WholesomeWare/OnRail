@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.os.Bundle
 import android.text.format.DateFormat
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -47,19 +47,25 @@ import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -67,6 +73,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -87,6 +94,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -135,7 +143,7 @@ class TrainActivity : ComponentActivity() {
         val mapState = remember { LocationUtils.getMapState(context) }
 
         var isLoading by remember { mutableStateOf(false) }
-        var selectedTab by remember { mutableIntStateOf(TAB_MAP) }
+        var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
         var train by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
         var trainsLastUpdated by rememberSaveable { mutableLongStateOf(0L) }
         val trainsLastUpdatedText by remember(trainsLastUpdated, isLoading) {
@@ -147,7 +155,9 @@ class TrainActivity : ComponentActivity() {
                 }
             }
         }
-        var isTrainInfoDialogOpen by remember { mutableStateOf(false) }
+        var isTrainInfoDialogOpen by rememberSaveable { mutableStateOf(false) }
+        var isSendingLocationEnabled by rememberSaveable { mutableStateOf(false) }
+        var isSendingLocationHintVisible by rememberSaveable { mutableStateOf(true) }
         var messages by remember { mutableStateOf(listOf<Message>()) }
         val readableMessages by remember(messages, selectedTab) {
             derivedStateOf {
@@ -163,10 +173,10 @@ class TrainActivity : ComponentActivity() {
                 }
             }
         }
-        var isLocationSendingDialogOpen by remember { mutableStateOf(false) }
-        var isAddReportMenuOpen by remember { mutableStateOf(false) }
         var messageText by rememberSaveable { mutableStateOf("") }
         var isSendingMessage by remember { mutableStateOf(false) }
+        var isLocationSendingDialogOpen by rememberSaveable { mutableStateOf(false) }
+        var isAddReportMenuOpen by rememberSaveable { mutableStateOf(false) }
         var selectedMessage by remember { mutableStateOf<Message?>(null) }
 
         LaunchedEffect(train, messages, selectedTab, LocationUtils.current) {
@@ -434,6 +444,135 @@ class TrainActivity : ComponentActivity() {
                 )
             }
 
+            if (isAddReportMenuOpen) {
+                ModalBottomSheet(
+                    onDismissRequest = { isAddReportMenuOpen = false },
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (isSendingLocationEnabled) Icons.Default.GpsFixed
+                            else Icons.Default.GpsOff,
+                            contentDescription = null,
+                        )
+                        Column(
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(text = "Helyadatok küldése")
+                            AnimatedVisibility(isSendingLocationEnabled) {
+                                Text(
+                                    text = "Köszönjük, hogy segítesz <3",
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = { isLocationSendingDialogOpen = true },
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Default.Help,
+                                contentDescription = null,
+                            )
+                        }
+                        Switch(
+                            checked = isSendingLocationEnabled,
+                            onCheckedChange = { isEnabled ->
+                                if (isEnabled) {
+                                    LocationUtils.requestPermissions { isGranted ->
+                                        isSendingLocationEnabled = isGranted
+                                    }
+                                } else {
+                                    isSendingLocationEnabled = false
+                                }
+                            },
+                            thumbContent = {
+                                AnimatedVisibility(isSendingLocationEnabled) {
+                                    Icon(
+                                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                    )
+                                }
+                            },
+                        )
+                    }
+
+                    HorizontalDivider()
+
+                    FlowRow(
+                        modifier = Modifier.padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Message.reportOptions.forEach { reportOption ->
+                            NavigationBarItem(
+                                enabled = isSendingLocationEnabled,
+                                selected = false,
+                                onClick = {
+                                    isSendingMessage = true
+                                    isAddReportMenuOpen = false
+
+                                    val message = reportOption.copy(
+                                        timestamp = System.currentTimeMillis(),
+                                        senderId = Auth.currentUser!!.uid,
+                                        senderName = Auth.currentUser!!.displayName
+                                            ?: "Ismeretlen",
+                                    )
+
+                                    if (isSendingLocationEnabled) {
+                                        LocationUtils.getCurrentLocation(
+                                            this@TrainActivity
+                                        ) { latLng ->
+                                            RTDB.sendMessage(
+                                                trainId = train.trip.tripShortName,
+                                                message = message.copy(
+                                                    location = latLng.toString(),
+                                                ),
+                                            ) {
+                                                if (!it) {
+                                                    Toast.makeText(
+                                                        this@TrainActivity,
+                                                        "Hiba történt az üzenet küldésekor!",
+                                                        Toast.LENGTH_SHORT,
+                                                    ).show()
+                                                }
+                                                isSendingMessage = false
+                                            }
+                                        }
+                                        return@NavigationBarItem
+                                    } else {
+                                        Toast.makeText(
+                                            this@TrainActivity,
+                                            "Engedélyezd a helyadatok küldését ehhez!",
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                        isSendingMessage = false
+                                        return@NavigationBarItem
+                                    }
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Report,
+                                        contentDescription = null,
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        text = reportOption.content,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+
             Surface(
                 color = MaterialTheme.colorScheme.background,
             ) {
@@ -661,69 +800,70 @@ class TrainActivity : ComponentActivity() {
                         }
                     }
 
-                    if (Auth.currentUser != null) {
-                        HorizontalFloatingToolbar(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min)
-                                .padding(8.dp),
-                            expanded = true,
+                    if (isSendingLocationHintVisible) {
+                        SwipeToDismissBox(
+                            state = rememberSwipeToDismissBoxState(),
+                            backgroundContent = {},
+                            onDismiss = { isSendingLocationHintVisible = false }
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            Card(
+                                modifier = Modifier.padding(8.dp),
                             ) {
-                                Icon(
-                                    imageVector = if (LocalSettings.isSendingLocationEnabled) Icons.Default.GpsFixed
-                                    else Icons.Default.GpsOff,
-                                    contentDescription = null,
-                                )
                                 Column(
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    Text(text = "Helyadatok küldése")
-                                    AnimatedVisibility(LocalSettings.isSendingLocationEnabled) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
                                         Text(
-                                            text = "Köszönjük, hogy segítesz <3",
-                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.weight(1f),
+                                            text = "Ezen a vonaton ülsz épp?",
                                         )
+                                        TextButton(
+                                            onClick = { isSendingLocationHintVisible = false },
+                                        ) {
+                                            Text(text = "Nem")
+                                        }
+                                        TextButton(
+                                            onClick = {
+                                                isSendingLocationHintVisible = false
+                                                LocationUtils.requestPermissions { isGranted ->
+                                                    isSendingLocationEnabled = isGranted
+                                                }
+                                            },
+                                        ) {
+                                            Text(text = "Igen")
+                                        }
                                     }
-                                }
-                                IconButton(
-                                    onClick = { isLocationSendingDialogOpen = true },
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Default.Help,
-                                        contentDescription = null,
+                                    Text(
+                                        text = "Segítsd utastársaid helyadatok küldésével, hogy mindenki " +
+                                                "pontos információkat kapjon a vonat helyzetéről.",
+                                        style = MaterialTheme.typography.bodySmall,
                                     )
                                 }
-                                Switch(
-                                    checked = LocalSettings.isSendingLocationEnabled,
-                                    onCheckedChange = { isEnabled ->
-                                        if (isEnabled) {
-                                            LocationUtils.requestPermissions { isGranted ->
-                                                LocalSettings.isSendingLocationEnabled = isGranted
-                                                LocalSettings.save(this@TrainActivity)
-                                            }
-                                        } else {
-                                            LocalSettings.isSendingLocationEnabled = false
-                                            LocalSettings.save(this@TrainActivity)
-                                        }
-                                    },
-                                    thumbContent = {
-                                        AnimatedVisibility(LocalSettings.isSendingLocationEnabled) {
-                                            Icon(
-                                                modifier = Modifier.size(SwitchDefaults.IconSize),
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = null,
-                                            )
-                                        }
-                                    },
-                                )
                             }
+                        }
+                    }
+                    else {
+                        ToggleButton(
+                            checked = isSendingLocationEnabled,
+                            onCheckedChange = { isEnabled ->
+                                if (isEnabled) {
+                                    LocationUtils.requestPermissions { isGranted ->
+                                        isSendingLocationEnabled = isGranted
+                                    }
+                                } else {
+                                    isSendingLocationEnabled = false
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = if (isSendingLocationEnabled) Icons.Default.GpsFixed
+                                else Icons.Default.GpsOff,
+                                contentDescription = null,
+                            )
                         }
                     }
 
@@ -762,60 +902,6 @@ class TrainActivity : ComponentActivity() {
                                                     imageVector = Icons.Default.AddCircle,
                                                     contentDescription = null
                                                 )
-                                                DropdownMenu(
-                                                    expanded = isAddReportMenuOpen && !isSendingMessage,
-                                                    onDismissRequest = {
-                                                        isAddReportMenuOpen = false
-                                                    },
-                                                ) {
-                                                    Message.reportOptions.forEach { reportOption ->
-                                                        DropdownMenuItem(
-                                                            text = { Text(reportOption.content) },
-                                                            onClick = {
-                                                                isSendingMessage = true
-                                                                isAddReportMenuOpen = false
-
-                                                                val message = reportOption.copy(
-                                                                    timestamp = System.currentTimeMillis(),
-                                                                    senderId = Auth.currentUser!!.uid,
-                                                                    senderName = Auth.currentUser!!.displayName
-                                                                        ?: "Ismeretlen",
-                                                                )
-
-                                                                if (LocalSettings.isSendingLocationEnabled) {
-                                                                    LocationUtils.getCurrentLocation(
-                                                                        this@TrainActivity
-                                                                    ) { latLng ->
-                                                                        RTDB.sendMessage(
-                                                                            trainId = train.trip.tripShortName,
-                                                                            message = message.copy(
-                                                                                location = latLng.toString(),
-                                                                            ),
-                                                                        ) {
-                                                                            if (!it) {
-                                                                                Toast.makeText(
-                                                                                    this@TrainActivity,
-                                                                                    "Hiba történt az üzenet küldésekor!",
-                                                                                    Toast.LENGTH_SHORT,
-                                                                                ).show()
-                                                                            }
-                                                                            isSendingMessage = false
-                                                                        }
-                                                                    }
-                                                                    return@DropdownMenuItem
-                                                                } else {
-                                                                    Toast.makeText(
-                                                                        this@TrainActivity,
-                                                                        "Engedélyezd a helyadatok küldését ehhez!",
-                                                                        Toast.LENGTH_SHORT,
-                                                                    ).show()
-                                                                    isSendingMessage = false
-                                                                    return@DropdownMenuItem
-                                                                }
-                                                            },
-                                                        )
-                                                    }
-                                                }
                                             }
                                         },
                                     )
@@ -841,7 +927,7 @@ class TrainActivity : ComponentActivity() {
                                             )
                                             messageText = ""
 
-                                            if (LocalSettings.isSendingLocationEnabled) {
+                                            if (isSendingLocationEnabled) {
                                                 LocationUtils.getCurrentLocation(this@TrainActivity) { latLng ->
                                                     RTDB.sendMessage(
                                                         trainId = train.trip.tripShortName,
@@ -874,6 +960,13 @@ class TrainActivity : ComponentActivity() {
                                                 modifier = Modifier.size(24.dp),
                                             )
                                         } else {
+                                            AnimatedVisibility(isSendingLocationEnabled) {
+                                                Icon(
+                                                    modifier = Modifier.size(12.dp),
+                                                    imageVector = Icons.Default.GpsFixed,
+                                                    contentDescription = "Send message with location",
+                                                )
+                                            }
                                             Icon(
                                                 imageVector = Icons.AutoMirrored.Default.Send,
                                                 contentDescription = "Send message",
