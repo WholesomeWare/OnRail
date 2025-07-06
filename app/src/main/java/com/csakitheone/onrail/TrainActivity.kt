@@ -246,6 +246,7 @@ class TrainActivity : ComponentActivity() {
                 }
             }
 
+            /*
             mapState.addMarker(
                 id = "prevOrCurrentStop",
                 x = prevOrCurrentStopLatLng.normalized.longitude,
@@ -295,6 +296,7 @@ class TrainActivity : ComponentActivity() {
                     }
                 }
             }
+            */
 
             messages
                 .filter { it.location.isNotBlank() }
