@@ -145,6 +145,7 @@ class TrainActivity : ComponentActivity() {
 
         var isLoading by remember { mutableStateOf(false) }
         var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
+        var initialTrain by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
         var train by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
         var trainsLastUpdated by rememberSaveable { mutableLongStateOf(0L) }
         val trainsLastUpdatedText by remember(trainsLastUpdated, isLoading) {
@@ -187,8 +188,13 @@ class TrainActivity : ComponentActivity() {
             val trainLatLng = LatLng(train.lat, train.lon)
             val latestLatLng = if ((latestMessage?.timestamp ?: 0L) > trainsLastUpdated) {
                 LatLng.fromString(latestMessage?.location)
-            } else {
+            } else if (trainLatLng != LatLng.ZERO) {
                 trainLatLng
+            } else if (LocationUtils.current != LatLng.ZERO) {
+                LocationUtils.current
+            } else {
+                // Default to Budapest
+                LatLng(47.4979, 19.0402)
             }
 
             val prevOrCurrentStopLatLng = LatLng(
@@ -221,27 +227,29 @@ class TrainActivity : ComponentActivity() {
                 }
             }
 
-            mapState.addMarker(
-                id = train.trip.gtfsId,
-                x = trainLatLng.normalized.longitude,
-                y = trainLatLng.normalized.latitude,
-                relativeOffset = Offset(-.5f, -.5f),
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+            if (trainLatLng != LatLng.ZERO) {
+                mapState.addMarker(
+                    id = train.trip.gtfsId,
+                    x = trainLatLng.normalized.longitude,
+                    y = trainLatLng.normalized.latitude,
+                    relativeOffset = Offset(-.5f, -.5f),
                 ) {
-                    FilledIconButton(
-                        onClick = {
-                            isTrainInfoDialogOpen = true
-                        },
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Train,
-                            contentDescription = "Train position",
-                        )
-                    }
-                    Badge {
-                        Text(text = "MÁV szerinti pozíció")
+                        FilledIconButton(
+                            onClick = {
+                                isTrainInfoDialogOpen = true
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Train,
+                                contentDescription = "Train position",
+                            )
+                        }
+                        Badge {
+                            Text(text = "MÁV szerinti pozíció")
+                        }
                     }
                 }
             }
@@ -347,7 +355,8 @@ class TrainActivity : ComponentActivity() {
         }
 
         DisposableEffect(Unit) {
-            train = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
+            initialTrain = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
+            train = initialTrain.copy()
 
             RTDB.listenForMessages(
                 trainId = train.trip.tripShortName,
@@ -389,18 +398,9 @@ class TrainActivity : ComponentActivity() {
                 schedule(timerTask {
                     isLoading = true
                     TrainsProvider.getTrains(this@TrainActivity) { newTrains, lastUpdated ->
-                        val newTrain = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
+                        train = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
+                            ?: initialTrain.copy(lat = 0.0, lon = 0.0)
 
-                        if (newTrain == null) {
-                            Toast.makeText(
-                                this@TrainActivity,
-                                "A vonat nem található!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            finish()
-                            return@getTrains
-                        }
-                        train = newTrain
                         trainsLastUpdated = lastUpdated
                         isLoading = false
                     }
