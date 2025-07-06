@@ -62,8 +62,9 @@ class RTDB {
         fun updateVehicleData(
             vehicleData: List<EMMAVehiclePosition>
         ) {
-            ref.child("vehiclePositions").setValue(vehicleData)
-            ref.child("stats/relevance/vehiclePositions").setValue(System.currentTimeMillis())
+            ref.child("vehiclePositions")
+                .setValue(vehicleData.associateBy { vehicleData -> vehicleData.trip.tripShortName })
+            ref.child("stats/relevance/vehiclePositions").setValue(ServerValue.TIMESTAMP)
         }
 
         fun getVehiclePositions(
@@ -96,6 +97,23 @@ class RTDB {
                     callback(relevance)
                 }.addOnFailureListener {
                     callback(0L)
+                }
+        }
+
+        fun getVehiclePosition(
+            tripShortName: String,
+            callback: (EMMAVehiclePosition?) -> Unit
+        ) {
+            ref.child("vehiclePositions/$tripShortName").get()
+                .addOnSuccessListener { snapshot ->
+                    if (!snapshot.exists()) {
+                        callback(null)
+                        return@addOnSuccessListener
+                    }
+                    val vehiclePosition = snapshot.getValue(EMMAVehiclePosition::class.java)
+                    callback(vehiclePosition)
+                }.addOnFailureListener {
+                    callback(null)
                 }
         }
 
