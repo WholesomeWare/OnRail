@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsOff
 import androidx.compose.material.icons.filled.Map
@@ -190,6 +191,15 @@ class TrainActivity : ComponentActivity() {
                 trainLatLng
             }
 
+            val prevOrCurrentStopLatLng = LatLng(
+                train.prevOrCurrentStop.stop.lat,
+                train.prevOrCurrentStop.stop.lon,
+            )
+            val nextStopLatLng = LatLng(
+                train.nextStop.stop.lat,
+                train.nextStop.stop.lon,
+            )
+
             mapState.removeAllMarkers()
 
             if (LocationUtils.current == LatLng.ZERO) {
@@ -232,6 +242,56 @@ class TrainActivity : ComponentActivity() {
                     }
                     Badge {
                         Text(text = "MÁV szerinti pozíció")
+                    }
+                }
+            }
+
+            mapState.addMarker(
+                id = "prevOrCurrentStop",
+                x = prevOrCurrentStopLatLng.normalized.longitude,
+                y = prevOrCurrentStopLatLng.normalized.latitude,
+                relativeOffset = Offset(-.5f, -.5f),
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    FilledIconButton(
+                        onClick = {
+                            //TODO: Open stop details
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = "Prev/Current Stop",
+                        )
+                    }
+                    Badge {
+                        Text(text = train.prevOrCurrentStop.stop.name)
+                    }
+                }
+            }
+
+            mapState.addMarker(
+                id = "nextStop",
+                x = nextStopLatLng.normalized.longitude,
+                y = nextStopLatLng.normalized.latitude,
+                relativeOffset = Offset(-.5f, -.5f),
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    FilledIconButton(
+                        onClick = {
+                            //TODO: Open stop details
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = "Next Stop",
+                        )
+                    }
+                    Badge {
+                        Text(text = train.nextStop.stop.name)
                     }
                 }
             }
@@ -843,8 +903,7 @@ class TrainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                    }
-                    else {
+                    } else {
                         ToggleButton(
                             checked = isSendingLocationEnabled,
                             onCheckedChange = { isEnabled ->

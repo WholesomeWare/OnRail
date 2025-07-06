@@ -62,6 +62,11 @@ class RTDB {
         fun updateVehicleData(
             vehicleData: List<EMMAVehiclePosition>
         ) {
+            if (vehicleData.isEmpty()) {
+                Log.w("RTDB", "updateVehicleData called with empty vehicleData list")
+                return
+            }
+
             ref.child("vehiclePositions")
                 .setValue(vehicleData.associateBy { vehicleData -> vehicleData.trip.tripShortName })
             ref.child("stats/relevance/vehiclePositions").setValue(ServerValue.TIMESTAMP)

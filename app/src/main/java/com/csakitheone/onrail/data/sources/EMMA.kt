@@ -1,5 +1,6 @@
 package com.csakitheone.onrail.data.sources
 
+import android.util.Log
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -16,18 +17,34 @@ class EMMA {
     companion object {
         private const val BASE_URL =
             "https://emma.mav.hu/otp2-backend/otp/routers/default/index/graphql"
+        private val client = OkHttpClient()
 
         @OptIn(DelicateCoroutinesApi::class)
         fun fetchTrains(callback: (List<EMMAVehiclePosition>) -> Unit = {}) {
-            val client = OkHttpClient()
+            val query = """
+                {
+                    vehiclePositions(
+                        swLat: 45.5,
+                        swLon: 16.1,
+                        neLat: 48.7,
+                        neLon: 22.8,
+                        modes: [RAIL, RAIL_REPLACEMENT_BUS]
+                    ) {
+                        trip { gtfsId tripShortName tripHeadsign }
+                        vehicleId
+                        lat lon
+                        label speed heading
+                        stopRelationship { status }
+                        prevOrCurrentStop { stop { name lat lon } }
+                        nextStop { stop { name lat lon } }
+                    }
+                }
+            """.replace("\n", " ")
 
             val request = Request.Builder()
                 .url(BASE_URL)
-                .post(
-                    "{\"query\":\"{ vehiclePositions(swLat: 45.5, swLon: 16.1, neLat: 48.7, neLon: 22.8, modes: [RAIL, RAIL_REPLACEMENT_BUS]) { trip { gtfsId tripShortName tripHeadsign } vehicleId lat lon label speed heading } }\",\"variables\":{}}".toRequestBody(
-                        "application/json".toMediaType()
-                    )
-                )
+                .post("{ \"query\": \"${query}\", \"variables\": {} }".toRequestBody("application/json".toMediaType()))
+                .addHeader("User-Agent", "OnRail/1.0")
                 .addHeader("Content-Type", "application/json")
                 .build()
 
@@ -41,7 +58,8 @@ class EMMA {
 
                 val responseBody = response.body?.string() ?: return@launch
                 val jsonResponse = JSONObject(responseBody)
-                val vehiclesArray = jsonResponse.getJSONObject("data").getJSONArray("vehiclePositions")
+                val vehiclesArray =
+                    jsonResponse.getJSONObject("data").getJSONArray("vehiclePositions")
                 val vehicles = (0 until vehiclesArray.length()).map { index ->
                     val vehicleJson = vehiclesArray.getJSONObject(index)
                     EMMAVehiclePosition.fromJson(vehicleJson.toString())

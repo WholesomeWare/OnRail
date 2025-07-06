@@ -13,12 +13,26 @@ data class EMMAVehiclePosition(
     val heading: Double = 0.0,
     val label: String = "",
     val trip: Trip = Trip(),
+    val prevOrCurrentStop: Stoptime = Stoptime(),
+    val nextStop: Stoptime = Stoptime(),
 ) : Parcelable {
     @Parcelize
     data class Trip(
         val gtfsId: String = "",
         val tripShortName: String = "",
         val tripHeadsign: String = "",
+    ) : Parcelable
+
+    @Parcelize
+    data class Stop(
+        val name: String = "",
+        val lat: Double = 0.0,
+        val lon: Double = 0.0,
+    ) : Parcelable
+
+    @Parcelize
+    data class Stoptime(
+        val stop: Stop = Stop(),
     ) : Parcelable
 
     override fun toString(): String {
@@ -34,6 +48,20 @@ data class EMMAVehiclePosition(
                 put("gtfsId", trip.gtfsId)
                 put("tripShortName", trip.tripShortName)
                 put("tripHeadsign", trip.tripHeadsign)
+            })
+            put("prevOrCurrentStop", JSONObject().apply {
+                put("stop", JSONObject().apply {
+                    put("name", prevOrCurrentStop.stop.name)
+                    put("lat", prevOrCurrentStop.stop.lat)
+                    put("lon", prevOrCurrentStop.stop.lon)
+                })
+            })
+            put("nextStop", JSONObject().apply {
+                put("stop", JSONObject().apply {
+                    put("name", nextStop.stop.name)
+                    put("lat", nextStop.stop.lat)
+                    put("lon", nextStop.stop.lon)
+                })
             })
         }.toString()
     }
@@ -56,6 +84,26 @@ data class EMMAVehiclePosition(
                         gtfsId = tripJson.getString("gtfsId"),
                         tripShortName = tripJson.getString("tripShortName"),
                         tripHeadsign = tripJson.getString("tripHeadsign")
+                    ),
+                    prevOrCurrentStop = Stoptime(
+                        stop = Stop(
+                            name = jsonObject.getJSONObject("prevOrCurrentStop").getJSONObject("stop")
+                                .getString("name"),
+                            lat = jsonObject.getJSONObject("prevOrCurrentStop").getJSONObject("stop")
+                                .getDouble("lat"),
+                            lon = jsonObject.getJSONObject("prevOrCurrentStop").getJSONObject("stop")
+                                .getDouble("lon")
+                        )
+                    ),
+                    nextStop = Stoptime(
+                        stop = Stop(
+                            name = jsonObject.getJSONObject("nextStop").getJSONObject("stop")
+                                .getString("name"),
+                            lat = jsonObject.getJSONObject("nextStop").getJSONObject("stop")
+                                .getDouble("lat"),
+                            lon = jsonObject.getJSONObject("nextStop").getJSONObject("stop")
+                                .getDouble("lon")
+                        )
                     )
                 )
             } catch (_: Exception) {
