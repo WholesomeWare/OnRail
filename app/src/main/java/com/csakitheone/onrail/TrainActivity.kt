@@ -192,7 +192,9 @@ class TrainActivity : ComponentActivity() {
 
             mapState.removeAllMarkers()
 
-            if (LocationUtils.current != LatLng.ZERO) {
+            if (LocationUtils.current == LatLng.ZERO) {
+                LocationUtils.getLastKnownLocation(this@TrainActivity) {}
+            } else {
                 mapState.addMarker(
                     id = "user",
                     x = LocationUtils.current.normalized.longitude,
@@ -340,7 +342,7 @@ class TrainActivity : ComponentActivity() {
                         trainsLastUpdated = lastUpdated
                         isLoading = false
                     }
-                }, 0L, 60_000L)
+                }, 0L, TrainsProvider.SERVER_UPDATE_INTERVAL)
             }
 
             onDispose {

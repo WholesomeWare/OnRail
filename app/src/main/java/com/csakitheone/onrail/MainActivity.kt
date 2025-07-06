@@ -199,7 +199,7 @@ class MainActivity : ComponentActivity() {
                         trainsLastUpdated = lastUpdated
                         isLoading = false
                     }
-                }, 0L, 60_000L)
+                }, 0L, TrainsProvider.SERVER_UPDATE_INTERVAL)
             }
 
             onDispose {

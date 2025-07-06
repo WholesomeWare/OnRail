@@ -10,6 +10,8 @@ import java.io.File
 class TrainsProvider {
     companion object {
 
+        val SERVER_UPDATE_INTERVAL = 1000L * 30 // 30 seconds
+
         private fun updateLocalCache(
             context: Context,
             trains: List<EMMAVehiclePosition>,

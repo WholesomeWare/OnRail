@@ -73,7 +73,9 @@ class LocationUtils {
 
             fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
                 if (location != null) {
-                    callback(LatLng(location.latitude, location.longitude))
+                    val newLatLng = LatLng(location.latitude, location.longitude)
+                    if (current != newLatLng) current = newLatLng
+                    callback(newLatLng)
                 } else {
                     callback(LatLng.ZERO)
                 }
