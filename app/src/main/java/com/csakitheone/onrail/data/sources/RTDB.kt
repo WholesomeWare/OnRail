@@ -6,6 +6,7 @@ import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.model.Message
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 
@@ -110,8 +111,13 @@ class RTDB {
             }
             lastMessageSentTimestamp = currentTime
 
-            ref.child("trains/$trainId/messages/${message.timestamp}").setValue(message)
-                .addOnCompleteListener { callback(it.isSuccessful) }
+            ref.child("trains/$trainId/messages/${message.timestamp}")
+                .setValue(message)
+                .addOnCompleteListener {
+                    callback(it.isSuccessful)
+                    ref.child("trains/$trainId/messages/${message.timestamp}/timestamp")
+                        .setValue(ServerValue.TIMESTAMP)
+                }
         }
 
         fun removeMessage(
