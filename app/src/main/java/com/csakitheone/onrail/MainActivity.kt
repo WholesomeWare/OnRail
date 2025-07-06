@@ -187,7 +187,7 @@ class MainActivity : ComponentActivity() {
                 mapState.scrollTo(
                     x = latLngHungary.normalized.longitude,
                     y = latLngHungary.normalized.latitude,
-                    destScale = .002,
+                    destScale = .0005,
                 )
             }
 
@@ -600,7 +600,7 @@ class MainActivity : ComponentActivity() {
                                             mapState.scrollTo(
                                                 x = it.normalized.longitude,
                                                 y = it.normalized.latitude,
-                                                destScale = .2,
+                                                destScale = .02,
                                             )
                                             isLoadingLocation = false
                                         }

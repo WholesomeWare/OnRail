@@ -334,7 +334,7 @@ class TrainActivity : ComponentActivity() {
             mapState.scrollTo(
                 x = latestLatLng.normalized.longitude,
                 y = latestLatLng.normalized.latitude,
-                destScale = .1,
+                destScale = .02,
             )
         }
 

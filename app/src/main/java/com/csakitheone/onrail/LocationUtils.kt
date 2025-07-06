@@ -23,6 +23,7 @@ import java.io.InputStream
 import java.net.URL
 import kotlin.math.PI
 import kotlin.math.ln
+import kotlin.math.log2
 import kotlin.math.pow
 import kotlin.math.tan
 
@@ -106,10 +107,14 @@ class LocationUtils {
 
         fun getMapState(context: Context): MapState {
             val level = 18
+            val tileSize = 1024
+            val dimension = 2.0.pow(log2(tileSize.toDouble()) - 1 + level).toInt()
+
             return MapState(
                 levelCount = level,
-                fullWidth = 2.0.pow(7 + level).toInt(),
-                fullHeight = 2.0.pow(7 + level).toInt(),
+                fullWidth = dimension,
+                fullHeight = dimension,
+                tileSize = tileSize,
             ).apply {
                 addLayer({ row, col, zoom ->
                     val cacheFile = File(context.cacheDir, "tiles/tile_${zoom}_${col}_${row}.png")
