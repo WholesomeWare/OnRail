@@ -179,33 +179,6 @@ fun ProfileIcon(
                 }
                 DropdownMenuItem(
                     onClick = {
-                        if (activity == null) return@DropdownMenuItem
-
-                        CustomTabsIntent.Builder()
-                            .setDefaultColorSchemeParams(
-                                CustomTabColorSchemeParams.Builder()
-                                    .setToolbarColor(colorScheme.primary.toArgb())
-                                    .setSecondaryToolbarColor(colorScheme.secondary.toArgb())
-                                    .build()
-                            )
-                            .build()
-                            .launchUrl(
-                            activity,
-                            "https://www.mavcsoport.hu/mavinform?field_modalitas_value%5B%5D=vasut".toUri()
-                        )
-
-                        isMenuOpen = false
-                    },
-                    text = { Text(text = "MÁVINFORM") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Default.OpenInNew,
-                            contentDescription = null
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    onClick = {
                         if (Auth.currentUser == null) {
                             coroutineScope.launch {
                                 if (activity != null) Auth.signInWithGoogle(activity)
