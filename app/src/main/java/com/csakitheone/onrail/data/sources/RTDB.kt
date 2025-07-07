@@ -68,7 +68,7 @@ class RTDB {
             }
 
             ref.child("vehiclePositions")
-                .setValue(vehicleData.associateBy { vehicleData -> vehicleData.trip.tripShortName })
+                .setValue(vehicleData.associateBy { vehicleData -> vehicleData.trip.tripShortName.ifBlank { "(empty)" } })
             ref.child("stats/relevance/vehiclePositions").setValue(ServerValue.TIMESTAMP)
         }
 
