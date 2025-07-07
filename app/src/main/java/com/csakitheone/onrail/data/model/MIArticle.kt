@@ -1,6 +1,7 @@
 package com.csakitheone.onrail.data.model
 
 import android.os.Parcelable
+import com.csakitheone.onrail.data.sources.MAVINFORM
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -9,4 +10,8 @@ data class MIArticle(
     val link: String,
     val dateValidFrom: String,
     val dateLastUpdated: String,
-) : Parcelable
+    val scopes: List<String>,
+) : Parcelable {
+    val territoryScopes: List<MAVINFORM.Territory>
+        get() = scopes.mapNotNull { MAVINFORM.Territory.fromName(it) }
+}

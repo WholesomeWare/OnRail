@@ -20,6 +20,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -43,17 +44,21 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.Info
@@ -75,9 +80,13 @@ import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -183,9 +192,24 @@ class MainActivity : ComponentActivity() {
         var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
         var trainsLastUpdated by remember { mutableLongStateOf(0L) }
 
+        var isUpdateInfoDialogOpen by remember { mutableStateOf(false) }
         var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
 
-        var isUpdateInfoDialogOpen by remember { mutableStateOf(false) }
+        var selectedTerritoryName by rememberSaveable { mutableStateOf("") }
+        val filteredMavinformArticles by remember(mavinformArticles, selectedTerritoryName) {
+            derivedStateOf {
+                if (selectedTerritoryName.isBlank()) {
+                    mavinformArticles
+                } else {
+                    mavinformArticles.filter { article ->
+                        article.territoryScopes.any { it.displayName == selectedTerritoryName }
+                    }
+                }
+            }
+        }
+
+        var mapFilterTrains by remember { mutableStateOf(true) }
+        var mapFilterMavinform by remember { mutableStateOf(false) }
         var searchQuery by remember { mutableStateOf("") }
         var isLoadingLocation by remember { mutableStateOf(false) }
 
@@ -244,7 +268,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LaunchedEffect(visibleTrains, LocationUtils.current) {
+            LaunchedEffect(
+                visibleTrains,
+                LocationUtils.current,
+                mapFilterTrains,
+                mapFilterMavinform,
+            ) {
                 mapState.removeAllMarkers()
                 mapState.removeClusterer("trains")
 
@@ -259,94 +288,88 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                visibleTrains.forEach { train ->
-                    val latLng = LatLng(train.lat, train.lon)
-                    mapState.addMarker(
-                        id = train.trip.gtfsId,
-                        x = latLng.normalized.longitude,
-                        y = latLng.normalized.latitude,
-                        relativeOffset = Offset(-.5f, -.5f),
-                        renderingStrategy = RenderingStrategy.Clustering("trains"),
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            val interactionSource = remember { MutableInteractionSource() }
-                            val viewConfiguration = LocalViewConfiguration.current
-                            LaunchedEffect(interactionSource) {
-                                var isLongPress = false
-                                interactionSource.interactions.collectLatest {
-                                    when (it) {
-                                        is PressInteraction.Press -> {
-                                            isLongPress = false
-                                            delay(viewConfiguration.longPressTimeoutMillis)
-                                            isLongPress = true
-                                            NotifUtils.showBubble(this@MainActivity, train)
-                                        }
+                if (mapFilterTrains) {
+                    visibleTrains.forEach { train ->
+                        val latLng = LatLng(train.lat, train.lon)
+                        mapState.addMarker(
+                            id = train.trip.gtfsId,
+                            x = latLng.normalized.longitude,
+                            y = latLng.normalized.latitude,
+                            relativeOffset = Offset(-.5f, -.5f),
+                            renderingStrategy = RenderingStrategy.Clustering("trains"),
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                val interactionSource = remember { MutableInteractionSource() }
+                                val viewConfiguration = LocalViewConfiguration.current
+                                LaunchedEffect(interactionSource) {
+                                    var isLongPress = false
+                                    interactionSource.interactions.collectLatest {
+                                        when (it) {
+                                            is PressInteraction.Press -> {
+                                                isLongPress = false
+                                                delay(viewConfiguration.longPressTimeoutMillis)
+                                                isLongPress = true
+                                                NotifUtils.showBubble(this@MainActivity, train)
+                                            }
 
-                                        is PressInteraction.Release -> {
-                                            if (!isLongPress) {
-                                                startActivity(
-                                                    Intent(
-                                                        this@MainActivity,
-                                                        TrainActivity::class.java
-                                                    ).putExtra("trainJson", train.toString())
-                                                )
+                                            is PressInteraction.Release -> {
+                                                if (!isLongPress) {
+                                                    startActivity(
+                                                        Intent(
+                                                            this@MainActivity,
+                                                            TrainActivity::class.java
+                                                        ).putExtra("trainJson", train.toString())
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            FilledIconButton(
-                                onClick = {},
-                                interactionSource = interactionSource,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Train,
-                                    contentDescription = null,
-                                )
-                            }
-                            Badge {
-                                Text(text = train.trip.tripShortName)
+                                FilledIconButton(
+                                    onClick = {},
+                                    interactionSource = interactionSource,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Train,
+                                        contentDescription = null,
+                                    )
+                                }
+                                Badge {
+                                    Text(text = train.trip.tripShortName)
+                                }
                             }
                         }
                     }
                 }
 
-                MAVINFORM.Territory.entries.forEach { territory ->
-                    mapState.addMarker(
-                        id = "territory-${territory.id}",
-                        x = territory.latLng.normalized.longitude,
-                        y = territory.latLng.normalized.latitude,
-                        relativeOffset = Offset(-.5f, -.5f),
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            FilledIconButton(
-                                onClick = {
-                                    CustomTabsIntent.Builder()
-                                        .setDefaultColorSchemeParams(
-                                            CustomTabColorSchemeParams.Builder()
-                                                .setToolbarColor(colorScheme.primary.toArgb())
-                                                .setSecondaryToolbarColor(colorScheme.secondary.toArgb())
-                                                .build()
-                                        )
-                                        .build()
-                                        .launchUrl(
-                                            context,
-                                            "https://www.mavcsoport.hu/mavinform?field_modalitas_value%5B%5D=vasut&field_territorial_scope_target_id%5B%5D=${territory.id}".toUri()
-                                        )
-                                },
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                ),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                )
-                            }
-                            Badge {
-                                Text(text = territory.displayName)
+                if (mapFilterMavinform) {
+                    MAVINFORM.Territory.entries.forEach { territory ->
+                        mapState.addMarker(
+                            id = "territory-${territory.id}",
+                            x = territory.latLng.normalized.longitude,
+                            y = territory.latLng.normalized.latitude,
+                            relativeOffset = Offset(-.5f, -.5f),
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                FilledIconButton(
+                                    onClick = {
+                                        selectedTerritoryName = territory.displayName
+                                        selectedTab = TAB_MAVINFORM
+                                    },
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    ),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                    )
+                                }
+                                Badge {
+                                    Text(text = territory.displayName)
+                                }
                             }
                         }
                     }
@@ -707,8 +730,37 @@ class MainActivity : ComponentActivity() {
                     when (selectedTab) {
                         TAB_MAVINFORM -> LazyColumn(
                             modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            items(items = mavinformArticles) { article ->
+                            item {
+                                if (selectedTerritoryName.isNotBlank()) {
+                                    FilterChip(
+                                        selected = true,
+                                        onClick = {},
+                                        label = {
+                                            Text(text = selectedTerritoryName)
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                                imageVector = Icons.Default.FilterList,
+                                                contentDescription = null,
+                                            )
+                                        },
+                                        trailingIcon = {
+                                            Icon(
+                                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                                    .clickable {
+                                                    selectedTerritoryName = ""
+                                                },
+                                                imageVector = Icons.Default.Clear,
+                                                contentDescription = null,
+                                            )
+                                        },
+                                    )
+                                }
+                            }
+                            items(items = filteredMavinformArticles) { article ->
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -728,25 +780,106 @@ class MainActivity : ComponentActivity() {
                                                 )
                                         },
                                 ) {
-                                    Column(modifier = Modifier.padding(8.dp)) {
+                                    Column(
+                                        modifier = Modifier.padding(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        Text(
+                                            text = article.scopes.joinToString(", "),
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
                                         Text(
                                             text = article.title,
                                             style = MaterialTheme.typography.titleMedium,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis,
                                         )
-                                        Text(
-                                            text = "Érvényes: ${article.dateValidFrom}\n" +
-                                                    "Frissítve: ${article.dateLastUpdated}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                        )
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CalendarMonth,
+                                                contentDescription = null,
+                                            )
+                                            Text(
+                                                modifier = Modifier.weight(1f),
+                                                text = article.dateValidFrom,
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.Update,
+                                                contentDescription = null,
+                                            )
+                                            Text(
+                                                modifier = Modifier.weight(1f),
+                                                text = article.dateLastUpdated,
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                        }
                                     }
+                                }
+                            }
+                            item {
+                                TextButton(
+                                    onClick = {
+                                        CustomTabsIntent.Builder()
+                                            .setDefaultColorSchemeParams(
+                                                CustomTabColorSchemeParams.Builder()
+                                                    .setToolbarColor(colorScheme.primary.toArgb())
+                                                    .setSecondaryToolbarColor(colorScheme.secondary.toArgb())
+                                                    .build()
+                                            )
+                                            .build()
+                                            .launchUrl(
+                                                context,
+                                                "${MAVINFORM.baseUrl}/mavinform".toUri()
+                                            )
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Default.OpenInNew,
+                                        contentDescription = null,
+                                    )
+                                    Text(
+                                        modifier = Modifier
+                                            .padding(start = ButtonDefaults.IconSpacing),
+                                        text = "További hírek a weboldalon",
+                                    )
                                 }
                             }
                         }
 
                         else -> {
                             Spacer(modifier = Modifier.weight(1f))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = "Szűrők",
+                                )
+                                ElevatedFilterChip(
+                                    selected = mapFilterTrains,
+                                    onClick = { mapFilterTrains = !mapFilterTrains },
+                                    label = { Text(text = "Vonatok") },
+                                )
+                                ElevatedFilterChip(
+                                    selected = mapFilterMavinform,
+                                    onClick = { mapFilterMavinform = !mapFilterMavinform },
+                                    label = { Text(text = "MÁVINFORM") },
+                                )
+                            }
 
                             Row(
                                 modifier = Modifier

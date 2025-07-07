@@ -35,7 +35,13 @@ class MAVINFORM {
         TOLNA(10861, "Tolna", LatLng(46.5000, 18.7000)),
         VAS(10862, "Vas", LatLng(47.2000, 16.6000)),
         VESZPREM(10864, "Veszprém", LatLng(47.1000, 17.9000)),
-        ZALA(10865, "Zala", LatLng(46.5000, 16.8000)),
+        ZALA(10865, "Zala", LatLng(46.5000, 16.8000));
+
+        companion object {
+            fun fromName(name: String): Territory? {
+                return entries.find { it.displayName.equals(name, ignoreCase = true) }
+            }
+        }
     }
 
     companion object {
@@ -86,12 +92,18 @@ class MAVINFORM {
                             .substringAfter("field-content\">")
                             .substringBefore("</")
                             .trim()
+                        val scopes = it
+                            .substringAfter("field-territorial-scope\">")
+                            .split("field-territorial-scope\">")
+                            .map { scope -> scope.substringBefore("</").trim() }
+                            .filter { scope -> scope.isNotEmpty() }
 
                         MIArticle(
                             title = title,
                             link = link,
                             dateValidFrom = dateValidFrom,
                             dateLastUpdated = dateLastUpdated,
+                            scopes = scopes
                         )
                     }
 
