@@ -46,6 +46,7 @@ import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsNotFixed
@@ -616,6 +617,18 @@ class MainActivity : ComponentActivity() {
                                         imageVector = Icons.Default.Search,
                                         contentDescription = null
                                     )
+                                },
+                                trailingIcon = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        IconButton(
+                                            onClick = { searchQuery = "" },
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Clear,
+                                                contentDescription = "Törlés",
+                                            )
+                                        }
+                                    }
                                 },
                                 maxLines = 1,
                             )
