@@ -55,6 +55,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -138,6 +139,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             MainScreen()
         }
+
+        AppUpdateUtils.checkForUpdates(this)
 
         LocationUtils.register(this)
         NotifUtils.init(this)
@@ -531,6 +534,38 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
                         )
+                    }
+
+                    if (AppUpdateUtils.isUpdateAvailable) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                        ) {
+                            Row {
+                                Text(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp),
+                                    text = "Új frissítés elérhető!",
+                                )
+                                Button(
+                                    onClick = {
+                                        AppUpdateUtils.startUpdate()
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Update,
+                                        contentDescription = null,
+                                    )
+                                    Text(
+                                        modifier = Modifier
+                                            .padding(start = ButtonDefaults.IconSpacing),
+                                        text = "Frissítés",
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     if (motdText.isNotEmpty()) {

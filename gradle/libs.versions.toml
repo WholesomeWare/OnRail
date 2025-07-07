@@ -19,6 +19,8 @@ credentialsPlayServicesAuth = "1.5.0"
 googleid = "1.1.1"
 playServicesLocation = "21.3.0"
 mapcompose = "3.0.0"
+appUpdate = "2.1.0"
+appUpdateKtx = "2.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +46,8 @@ androidx-credentials-play-services-auth = { group = "androidx.credentials", name
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 mapcompose = { group = "ovh.plrapps", name = "mapcompose", version.ref = "mapcompose" }
+app-update = { group = "com.google.android.play", name = "app-update", version.ref = "appUpdate" }
+app-update-ktx = { group = "com.google.android.play", name = "app-update-ktx", version.ref = "appUpdateKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
