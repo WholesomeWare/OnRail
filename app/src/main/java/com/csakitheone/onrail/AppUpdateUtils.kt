@@ -31,7 +31,12 @@ class AppUpdateUtils {
             val appUpdateInfoTask = appUpdateManager!!.appUpdateInfo
 
             appUpdateInfoTask.addOnSuccessListener { newAppUpdateInfo ->
-                Log.d("AppUpdateUtils", "Update info received: $newAppUpdateInfo")
+                Log.d(
+                    "AppUpdateUtils",
+                    "Update info received: ${newAppUpdateInfo.updateAvailability()} " +
+                            "isFlexible: ${newAppUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)} " +
+                            "Priority: ${newAppUpdateInfo.updatePriority()}"
+                )
                 appUpdateInfo = newAppUpdateInfo
                 isUpdateAvailable =
                     newAppUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
@@ -50,7 +55,7 @@ class AppUpdateUtils {
             appUpdateManager!!.startUpdateFlowForResult(
                 appUpdateInfo!!,
                 activityResultLauncher!!,
-                AppUpdateOptions.defaultOptions(AppUpdateType.FLEXIBLE),
+                AppUpdateOptions.defaultOptions(AppUpdateType.IMMEDIATE),
             )
         }
 
