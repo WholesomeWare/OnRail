@@ -2,6 +2,7 @@ package com.csakitheone.onrail
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Intent
 import android.os.Bundle
 import android.text.format.DateFormat
 import android.widget.Toast
@@ -673,15 +674,19 @@ class TrainActivity : ComponentActivity() {
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                if (!intent.getBooleanExtra("bubble", false)) {
-                                    IconButton(
-                                        onClick = { finish() },
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                                            contentDescription = null
+                                IconButton(
+                                    onClick = {
+                                        startActivity(
+                                            Intent(context, MainActivity::class.java)
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                         )
-                                    }
+                                        finish()
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                                        contentDescription = null
+                                    )
                                 }
                                 Column(
                                     modifier = Modifier.weight(1f),
