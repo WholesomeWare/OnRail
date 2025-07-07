@@ -542,12 +542,13 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxWidth()
                                 .padding(8.dp),
                         ) {
-                            Row {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
                                 Text(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(8.dp),
-                                    text = "Új frissítés elérhető!",
+                                    modifier = Modifier.weight(1f),
+                                    text = "Új verzió elérhető!",
                                 )
                                 Button(
                                     onClick = {

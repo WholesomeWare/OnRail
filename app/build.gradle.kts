@@ -14,8 +14,8 @@ android {
         applicationId = "com.csakitheone.onrail"
         minSdk = 29
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.16"
+        versionCode = 17
+        versionName = "0.16.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
