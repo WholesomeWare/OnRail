@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -154,6 +155,7 @@ class MainActivity : ComponentActivity() {
             val TAB_MAVINFORM = 1
 
             var motdText by remember { mutableStateOf("") }
+            var isMotdCollapsed by rememberSaveable { mutableStateOf(false) }
             var mavinformArticles by rememberSaveable { mutableStateOf(emptyList<MIArticle>()) }
             var isLoading by remember { mutableStateOf(true) }
             var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
@@ -666,12 +668,16 @@ class MainActivity : ComponentActivity() {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp),
+                                .padding(8.dp)
+                                .animateContentSize(),
+                            onClick = { isMotdCollapsed = !isMotdCollapsed },
                         ) {
                             Text(
                                 modifier = Modifier.padding(8.dp),
                                 text = motdText,
                                 style = MaterialTheme.typography.bodySmall,
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = if (isMotdCollapsed) 1 else Int.MAX_VALUE,
                             )
                         }
                     }
