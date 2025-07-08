@@ -386,10 +386,13 @@ class MainActivity : ComponentActivity() {
                     text = {
                         Column {
                             Text(
-                                text = "Az alkalmazás nem közvetlen a MÁV szerveréről kérdezi le " +
-                                        "a vonatok adatait, hanem egy saját szerveren keresztül. " +
-                                        "Az utolsó frissítés ideje azt jelenti, hogy mikor kérte " +
-                                        "le a saját szerver a vonatok adatait a MÁV szerveréről.",
+                                text = "Az alkalmazás egy saját szerveren keresztül kéri le az " +
+                                        "adatokat, hogy a MÁV szerverei ne terhelődjenek. " +
+                                        "Így a MÁV szerverek ugyanannyi kérést kapnak 1, 100 vagy " +
+                                        "10000 felhasználónál is.\n" +
+                                        "Az utolsó frissítés ideje ezeknek a kéréseknek az idejét " +
+                                        "mutatja.",
+                                style = MaterialTheme.typography.bodySmall,
                             )
                             Row(
                                 modifier = Modifier
