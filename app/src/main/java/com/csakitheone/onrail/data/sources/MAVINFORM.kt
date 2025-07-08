@@ -61,6 +61,19 @@ class MAVINFORM {
             fetchArticlesFromUrl(url, callback)
         }
 
+        fun fetchArticleContent(
+            article: MIArticle,
+            callback: (String) -> Unit,
+        ) {
+            GlobalScope.launch(Dispatchers.IO) {
+                val html = URL("$baseUrl${article.link}").openConnection().inputStream.bufferedReader().readText()
+                val htmlContent = html.substringAfter("<div class=\"field-body\">")
+                    .substringBefore("<div class=\"social\">")
+                    .trim()
+                callback(htmlContent)
+            }
+        }
+
         @OptIn(DelicateCoroutinesApi::class)
         private fun fetchArticlesFromUrl(
             url: String,
