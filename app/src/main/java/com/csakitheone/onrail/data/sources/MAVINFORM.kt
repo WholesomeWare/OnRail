@@ -53,7 +53,12 @@ class MAVINFORM {
         val mavinformTrainsUrl = "$baseUrl/mavinform?field_modalitas_value%5B%5D=vasut"
 
         fun fetchRecentArticles(callback: (List<MIArticle>) -> Unit) {
-            fetchArticlesFromUrl(mavinformTrainsUrl, callback)
+            fetchArticlesFromUrl(mavinformTrainsUrl) { articlesGroup1 ->
+                fetchArticlesFromUrl("$mavinformTrainsUrl&page=1") { articlesGroup2 ->
+                    val allArticles = (articlesGroup1 + articlesGroup2).distinctBy { it.link }
+                    callback(allArticles)
+                }
+            }
         }
 
         fun fetchRecentArticlesByTerritory(
