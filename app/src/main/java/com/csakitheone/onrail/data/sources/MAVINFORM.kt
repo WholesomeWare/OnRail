@@ -1,5 +1,8 @@
 package com.csakitheone.onrail.data.sources
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.csakitheone.onrail.LatLng
 import com.csakitheone.onrail.data.model.MIArticle
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -51,32 +54,43 @@ class MAVINFORM {
 
         val baseUrl = "https://www.mavcsoport.hu"
         val mavinformTrainsUrl = "$baseUrl/mavinform?field_modalitas_value%5B%5D=vasut"
+        var articles by mutableStateOf(emptyList<MIArticle>())
+            private set
 
-        fun fetchRecentArticles(callback: (List<MIArticle>) -> Unit) {
-            fetchArticlesFromUrl(mavinformTrainsUrl) { articlesGroup1 ->
-                fetchArticlesFromUrl("$mavinformTrainsUrl&page=1") { articlesGroup2 ->
-                    val allArticles = (articlesGroup1 + articlesGroup2).distinctBy { it.link }
-                    callback(allArticles)
+        fun fetchArticles(callback: (List<MIArticle>) -> Unit = {}) {
+            val urls = listOf(mavinformTrainsUrl) + (1..5).map { "$mavinformTrainsUrl&page=$it" }
+            val articles = mutableListOf<MIArticle>()
+            var remainingCalls = urls.size
+
+            urls.forEach { url ->
+                fetchArticlesFromUrl(url) { newArticles ->
+                    articles += newArticles
+                    remainingCalls--
+                    if (remainingCalls == 0) {
+                        this.articles = articles.sortedByDescending { it.dateValidFrom }
+                        callback(articles.sortedByDescending { it.dateValidFrom })
+                    }
                 }
             }
         }
 
-        fun fetchRecentArticlesByTerritory(
-            territory: Territory,
-            callback: (List<MIArticle>) -> Unit,
-        ) {
-            fetchArticlesFromUrl(territory.getUrl(), callback)
-        }
-
         fun fetchArticleContent(
             article: MIArticle,
-            callback: (String) -> Unit,
+            callback: (String) -> Unit = {},
         ) {
             GlobalScope.launch(Dispatchers.IO) {
                 val html = URL("$baseUrl${article.link}").openConnection().inputStream.bufferedReader().readText()
                 val htmlContent = html.substringAfter("<div class=\"field-body\">")
                     .substringBefore("<div class=\"social\">")
                     .trim()
+
+                articles = articles.map {
+                    if (it.link == article.link) {
+                        it.copy(content = htmlContent)
+                    } else {
+                        it
+                    }
+                }
                 callback(htmlContent)
             }
         }
@@ -90,6 +104,7 @@ class MAVINFORM {
                 val html = URL(url).openConnection().inputStream.bufferedReader().readText()
                 val articles = html.substringAfter("custom-news-item")
                     .split("custom-news-item")
+                    .filter { it.contains("news-title") }
                     .map {
                         val title = it
                             .substringAfter("news-title\">")

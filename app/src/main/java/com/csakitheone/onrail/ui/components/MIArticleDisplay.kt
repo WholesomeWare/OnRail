@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import com.csakitheone.onrail.data.model.MIArticle
 import com.csakitheone.onrail.data.sources.MAVINFORM
+import java.time.Duration
+import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -51,7 +54,6 @@ fun MIArticleDisplay(
     val colorScheme = MaterialTheme.colorScheme
 
     var isDialogOpen by remember { mutableStateOf(false) }
-    var htmlContent by remember { mutableStateOf("") }
 
     if (isDialogOpen) {
         AlertDialog(
@@ -108,10 +110,11 @@ fun MIArticleDisplay(
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
-                    if (htmlContent.isNotBlank()) {
+                    if (article.content.isNotBlank()) {
                         AndroidView(
                             factory = {
-                                fun Color.toCssColor() = "rgba(${red * 255}, ${green * 255}, ${blue * 255}, ${alpha})"
+                                fun Color.toCssColor() =
+                                    "rgba(${red * 255}, ${green * 255}, ${blue * 255}, ${alpha})"
 
                                 val styles = """
                                     <style>
@@ -138,7 +141,7 @@ fun MIArticleDisplay(
 
                                 WebView(it).apply {
                                     loadData(
-                                        styles + htmlContent,
+                                        styles + article.content,
                                         "text/html; charset=utf-8",
                                         "UTF-8"
                                     )
@@ -183,8 +186,8 @@ fun MIArticleDisplay(
         modifier = modifier,
         onClick = {
             isDialogOpen = true
-            if (htmlContent.isBlank()) {
-                MAVINFORM.fetchArticleContent(article) { htmlContent = it }
+            if (article.content.isBlank()) {
+                MAVINFORM.fetchArticleContent(article)
             }
         },
         colors = if (article.isDrastic) CardDefaults.cardColors(
@@ -217,7 +220,7 @@ fun MIArticleDisplay(
                 )
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = article.dateValidFrom,
+                    text = article.readableDateValidFrom,
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Icon(
@@ -226,7 +229,7 @@ fun MIArticleDisplay(
                 )
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = article.dateLastUpdated,
+                    text = article.readableDateLastUpdated,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

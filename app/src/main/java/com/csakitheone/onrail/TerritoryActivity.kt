@@ -42,6 +42,7 @@ import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -78,17 +79,19 @@ class TerritoryActivity : ComponentActivity() {
             val TAB_CHAT = 1
 
             var territory by remember { mutableStateOf(MAVINFORM.Territory.BUDAPEST) }
-            var mavinformArticles by remember { mutableStateOf(emptyList<MIArticle>()) }
+            val mavinformArticles by remember {
+                derivedStateOf {
+                    MAVINFORM.articles.filter {
+                        it.territoryScopes.contains(territory)
+                    }
+                }
+            }
             var selectedTab by remember { mutableIntStateOf(TAB_ARTICLES) }
 
             LaunchedEffect(Unit) {
                 territory = MAVINFORM.Territory.fromName(
                     intent.getStringExtra("territoryName")
                 ) ?: MAVINFORM.Territory.BUDAPEST
-
-                MAVINFORM.fetchRecentArticlesByTerritory(territory) { articles ->
-                    mavinformArticles = articles
-                }
             }
 
             Surface(

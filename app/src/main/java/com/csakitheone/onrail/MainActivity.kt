@@ -108,7 +108,6 @@ import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.csakitheone.onrail.data.TrainsProvider
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
-import com.csakitheone.onrail.data.model.MIArticle
 import com.csakitheone.onrail.data.sources.LocalSettings
 import com.csakitheone.onrail.data.sources.MAVINFORM
 import com.csakitheone.onrail.data.sources.RTDB
@@ -161,7 +160,6 @@ class MainActivity : ComponentActivity() {
 
             var motdText by remember { mutableStateOf("") }
             var isMotdCollapsed by rememberSaveable { mutableStateOf(false) }
-            var mavinformArticles by rememberSaveable { mutableStateOf(emptyList<MIArticle>()) }
             var isLoading by remember { mutableStateOf(true) }
             var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
             var trainsLastUpdated by remember { mutableLongStateOf(0L) }
@@ -197,9 +195,7 @@ class MainActivity : ComponentActivity() {
             DisposableEffect(Unit) {
                 RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
 
-                MAVINFORM.fetchRecentArticles {
-                    mavinformArticles = it
-                }
+                MAVINFORM.fetchArticles()
 
                 val latLngHungary = LatLng(47.1625, 19.5033)
                 coroutineScope.launch {
@@ -227,8 +223,9 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(
-                visibleTrains,
                 LocationUtils.current,
+                visibleTrains,
+                MAVINFORM.articles,
                 mapFilterTrains,
                 mapFilterMavinform,
             ) {
@@ -306,7 +303,7 @@ class MainActivity : ComponentActivity() {
 
                 if (mapFilterMavinform) {
                     MAVINFORM.Territory.entries.forEach { territory ->
-                        val newsCountAtLeast = mavinformArticles
+                        val newsCount = MAVINFORM.articles
                             .count { it.scopes.contains(territory.displayName) }
 
                         mapState.addMarker(
@@ -338,7 +335,10 @@ class MainActivity : ComponentActivity() {
                                                         Intent(
                                                             context,
                                                             TerritoryActivity::class.java
-                                                        ).putExtra("territoryName", territory.displayName)
+                                                        ).putExtra(
+                                                            "territoryName",
+                                                            territory.displayName
+                                                        )
                                                     )
                                                 }
                                             }
@@ -361,7 +361,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 Badge {
                                     Text(
-                                        text = territory.displayName + if (newsCountAtLeast > 0) " ($newsCountAtLeast+)" else "",
+                                        text = territory.displayName + if (newsCount > 0) " ($newsCount)" else "",
                                     )
                                 }
                             }
@@ -725,6 +725,12 @@ class MainActivity : ComponentActivity() {
                                     text = "MÁVINFORM"
                                 )
                             }
+                            AnimatedVisibility(selectedTab != TAB_MAVINFORM && MAVINFORM.articles.isNotEmpty()) {
+                                Text(
+                                    modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
+                                    text = MAVINFORM.articles.first().dateLastUpdated.substringAfter(" ")
+                                )
+                            }
                         }
                     }
 
@@ -736,7 +742,7 @@ class MainActivity : ComponentActivity() {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            items(items = mavinformArticles) { article ->
+                            items(items = MAVINFORM.articles) { article ->
                                 MIArticleDisplay(article = article)
                             }
                             item {
