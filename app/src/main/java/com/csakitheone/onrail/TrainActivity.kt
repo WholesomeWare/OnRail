@@ -41,7 +41,6 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsOff
 import androidx.compose.material.icons.filled.Map
@@ -49,7 +48,6 @@ import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
@@ -57,7 +55,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
@@ -371,7 +368,7 @@ class TrainActivity : ComponentActivity() {
                     ) {
                         when (it.messageType) {
                             Message.TYPE_TEXT -> {
-                                NotifUtils.showBubble(
+                                NotifUtils.showBubbleForTrain(
                                     this@TrainActivity,
                                     train,
                                     chatMessageSenderName = it.senderName,
@@ -380,7 +377,7 @@ class TrainActivity : ComponentActivity() {
                             }
 
                             Message.TYPE_REPORT -> {
-                                NotifUtils.showBubble(
+                                NotifUtils.showBubbleForTrain(
                                     this@TrainActivity,
                                     train,
                                     chatMessage = "Új jelentés: ${it.content}"
@@ -709,7 +706,10 @@ class TrainActivity : ComponentActivity() {
                                 if (!intent.getBooleanExtra("bubble", false)) {
                                     DropdownMenuItem(
                                         onClick = {
-                                            NotifUtils.showBubble(this@TrainActivity, train)
+                                            NotifUtils.showBubbleForTrain(
+                                                this@TrainActivity,
+                                                train
+                                            )
                                             dismiss()
                                         },
                                         text = {

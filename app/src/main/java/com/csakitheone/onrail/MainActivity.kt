@@ -1,13 +1,8 @@
 package com.csakitheone.onrail
 
 import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.net.Uri
 import android.os.Bundle
-import android.os.PowerManager
 import android.text.format.DateFormat
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,23 +14,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -43,19 +33,12 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
-import androidx.compose.material.icons.automirrored.filled.Login
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bookmarks
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.FilterList
@@ -63,17 +46,13 @@ import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
@@ -83,10 +62,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -95,25 +71,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.pullToRefresh
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -124,10 +92,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalViewConfiguration
@@ -136,16 +102,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import com.csakitheone.onrail.data.Auth
 import com.csakitheone.onrail.data.TrainsProvider
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.model.MIArticle
 import com.csakitheone.onrail.data.sources.LocalSettings
 import com.csakitheone.onrail.data.sources.MAVINFORM
 import com.csakitheone.onrail.data.sources.RTDB
+import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.theme.OnRailTheme
 import kotlinx.coroutines.delay
@@ -179,62 +144,48 @@ class MainActivity : ComponentActivity() {
     @Preview
     @Composable
     fun MainScreen() {
-        val context = LocalContext.current
-        val coroutineScope = rememberCoroutineScope()
-        val mapState = remember { LocationUtils.getMapState(context) }
+        OnRailTheme {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            val colorScheme = MaterialTheme.colorScheme
+            val mapState = remember { LocationUtils.getMapState(context) }
 
-        val TAB_MAP = 0
-        val TAB_MAVINFORM = 1
+            val TAB_MAP = 0
+            val TAB_MAVINFORM = 1
 
-        var motdText by remember { mutableStateOf("") }
-        var mavinformArticles by rememberSaveable { mutableStateOf(emptyList<MIArticle>()) }
-        var isLoading by remember { mutableStateOf(true) }
-        var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
-        var trainsLastUpdated by remember { mutableLongStateOf(0L) }
+            var motdText by remember { mutableStateOf("") }
+            var mavinformArticles by rememberSaveable { mutableStateOf(emptyList<MIArticle>()) }
+            var isLoading by remember { mutableStateOf(true) }
+            var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
+            var trainsLastUpdated by remember { mutableLongStateOf(0L) }
 
-        var isUpdateInfoDialogOpen by remember { mutableStateOf(false) }
-        var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
+            var isUpdateInfoDialogOpen by remember { mutableStateOf(false) }
+            var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
 
-        var selectedTerritoryName by rememberSaveable { mutableStateOf("") }
-        val filteredMavinformArticles by remember(mavinformArticles, selectedTerritoryName) {
-            derivedStateOf {
-                if (selectedTerritoryName.isBlank()) {
-                    mavinformArticles
-                } else {
-                    mavinformArticles.filter { article ->
-                        article.territoryScopes.any { it.displayName == selectedTerritoryName }
+            var mapFilterTrains by remember { mutableStateOf(true) }
+            var mapFilterMavinform by remember { mutableStateOf(false) }
+            var searchQuery by remember { mutableStateOf("") }
+            var isLoadingLocation by remember { mutableStateOf(false) }
+
+            val trainsLastUpdatedText by remember(isLoading, trainsLastUpdated) {
+                derivedStateOf {
+                    if (isLoading) {
+                        "Frissítés..."
+                    } else if (trainsLastUpdated == 0L) {
+                        "Nincs adat"
+                    } else {
+                        "Utoljára frissítve: ${DateFormat.format("HH:mm", trainsLastUpdated)}"
                     }
                 }
             }
-        }
-
-        var mapFilterTrains by remember { mutableStateOf(true) }
-        var mapFilterMavinform by remember { mutableStateOf(false) }
-        var searchQuery by remember { mutableStateOf("") }
-        var isLoadingLocation by remember { mutableStateOf(false) }
-
-        val trainsLastUpdatedText by remember(isLoading, trainsLastUpdated) {
-            derivedStateOf {
-                if (isLoading) {
-                    "Frissítés..."
-                } else if (trainsLastUpdated == 0L) {
-                    "Nincs adat"
-                } else {
-                    "Utoljára frissítve: ${DateFormat.format("HH:mm", trainsLastUpdated)}"
+            val visibleTrains by remember(trains, searchQuery) {
+                derivedStateOf {
+                    trains.filter { train ->
+                        train.trip.tripShortName.contains(searchQuery, ignoreCase = true) ||
+                                train.trip.tripHeadsign.contains(searchQuery, ignoreCase = true)
+                    }
                 }
             }
-        }
-        val visibleTrains by remember(trains, searchQuery) {
-            derivedStateOf {
-                trains.filter { train ->
-                    train.trip.tripShortName.contains(searchQuery, ignoreCase = true) ||
-                            train.trip.tripHeadsign.contains(searchQuery, ignoreCase = true)
-                }
-            }
-        }
-
-        OnRailTheme {
-            val colorScheme = MaterialTheme.colorScheme
 
             DisposableEffect(Unit) {
                 RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
@@ -309,7 +260,10 @@ class MainActivity : ComponentActivity() {
                                                 isLongPress = false
                                                 delay(viewConfiguration.longPressTimeoutMillis)
                                                 isLongPress = true
-                                                NotifUtils.showBubble(this@MainActivity, train)
+                                                NotifUtils.showBubbleForTrain(
+                                                    this@MainActivity,
+                                                    train
+                                                )
                                             }
 
                                             is PressInteraction.Release -> {
@@ -354,8 +308,12 @@ class MainActivity : ComponentActivity() {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 FilledIconButton(
                                     onClick = {
-                                        selectedTerritoryName = territory.displayName
-                                        selectedTab = TAB_MAVINFORM
+                                        startActivity(
+                                            Intent(
+                                                context,
+                                                TerritoryActivity::class.java
+                                            ).putExtra("territoryName", territory.displayName)
+                                        )
                                     },
                                     colors = IconButtonDefaults.filledIconButtonColors(
                                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -729,96 +687,14 @@ class MainActivity : ComponentActivity() {
 
                     when (selectedTab) {
                         TAB_MAVINFORM -> LazyColumn(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            item {
-                                if (selectedTerritoryName.isNotBlank()) {
-                                    FilterChip(
-                                        selected = true,
-                                        onClick = {},
-                                        label = {
-                                            Text(text = selectedTerritoryName)
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                modifier = Modifier.size(FilterChipDefaults.IconSize),
-                                                imageVector = Icons.Default.FilterList,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        trailingIcon = {
-                                            Icon(
-                                                modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                                    .clickable {
-                                                    selectedTerritoryName = ""
-                                                },
-                                                imageVector = Icons.Default.Clear,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                            items(items = filteredMavinformArticles) { article ->
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                        .clickable {
-                                            CustomTabsIntent.Builder()
-                                                .setDefaultColorSchemeParams(
-                                                    CustomTabColorSchemeParams.Builder()
-                                                        .setToolbarColor(colorScheme.primary.toArgb())
-                                                        .setSecondaryToolbarColor(colorScheme.secondary.toArgb())
-                                                        .build()
-                                                )
-                                                .build()
-                                                .launchUrl(
-                                                    context,
-                                                    "${MAVINFORM.baseUrl}${article.link}".toUri()
-                                                )
-                                        },
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                                    ) {
-                                        Text(
-                                            text = article.scopes.joinToString(", "),
-                                            style = MaterialTheme.typography.labelSmall,
-                                        )
-                                        Text(
-                                            text = article.title,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.CalendarMonth,
-                                                contentDescription = null,
-                                            )
-                                            Text(
-                                                modifier = Modifier.weight(1f),
-                                                text = article.dateValidFrom,
-                                                style = MaterialTheme.typography.bodySmall,
-                                            )
-                                            Icon(
-                                                imageVector = Icons.Default.Update,
-                                                contentDescription = null,
-                                            )
-                                            Text(
-                                                modifier = Modifier.weight(1f),
-                                                text = article.dateLastUpdated,
-                                                style = MaterialTheme.typography.bodySmall,
-                                            )
-                                        }
-                                    }
-                                }
+                            items(items = mavinformArticles) { article ->
+                                MIArticleDisplay(article = article)
                             }
                             item {
                                 TextButton(

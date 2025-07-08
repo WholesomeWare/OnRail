@@ -14,6 +14,7 @@ import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
+import com.csakitheone.onrail.data.sources.MAVINFORM
 
 class NotifUtils {
     companion object {
@@ -46,7 +47,7 @@ class NotifUtils {
             shortcutManager = activity.getSystemService(ShortcutManager::class.java)
         }
 
-        fun showBubble(
+        fun showBubbleForTrain(
             context: Context,
             train: EMMAVehiclePosition,
             chatMessageSenderName: String = "Egy utazó",
@@ -118,6 +119,80 @@ class NotifUtils {
                 .build()
 
             notificationManager.notify(train.trip.gtfsId.hashCode(), notification)
+        }
+
+        fun showBubbleForTerritory(
+            context: Context,
+            territory: MAVINFORM.Territory,
+            chatMessageSenderName: String = "Egy utazó",
+            chatMessage: String = "",
+        ) {
+            val target = Intent(context, TerritoryActivity::class.java)
+                .setAction(Intent.ACTION_DEFAULT)
+                .putExtra("territoryName", territory.displayName)
+                .putExtra("bubble", true)
+
+            val bubbleIntent = PendingIntent.getActivity(
+                context,
+                territory.id.hashCode(),
+                target,
+                PendingIntent.FLAG_MUTABLE
+            )
+
+            val territoryBot = Person.Builder()
+                .setName(territory.displayName)
+                .setBot(true)
+                .build()
+
+            val shortcut = ShortcutInfo.Builder(context, territory.id.toString())
+                .setIntent(target)
+                .setLongLived(true)
+                .setShortLabel(territory.displayName)
+                .build()
+
+            shortcutManager.addDynamicShortcuts(listOf(shortcut))
+
+            val bubbleData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Notification.BubbleMetadata.Builder(
+                    bubbleIntent,
+                    Icon.createWithResource(context, R.drawable.ic_train_24px)
+                )
+                    .setDesiredHeight(720)
+                    .setAutoExpandBubble(true)
+                    .build()
+            } else {
+                Notification.BubbleMetadata.Builder()
+                    .setIntent(bubbleIntent)
+                    .setIcon(Icon.createWithResource(context, R.drawable.ic_train_24px))
+                    .setDesiredHeight(720)
+                    .setAutoExpandBubble(true)
+                    .build()
+            }
+
+            val messagingStyle = Notification.MessagingStyle(territoryBot)
+                .setConversationTitle(territory.displayName)
+                .setGroupConversation(true)
+
+            if (chatMessage.isNotBlank()) {
+                messagingStyle.addMessage(
+                    chatMessage,
+                    System.currentTimeMillis(),
+                    Person.Builder().setName(chatMessageSenderName).build()
+                )
+            }
+
+            val notification = Notification.Builder(context, CHANNEL_TRAIN_UPDATES)
+                .setContentTitle(territory.displayName)
+                .setContentIntent(bubbleIntent)
+                .setSmallIcon(R.drawable.ic_train_24px)
+                .setBubbleMetadata(bubbleData)
+                .setShortcutId(territory.id.toString())
+                .setCategory(Notification.CATEGORY_MESSAGE)
+                .addPerson(territoryBot)
+                .setStyle(messagingStyle)
+                .build()
+
+            notificationManager.notify(territory.id.hashCode(), notification)
         }
 
     }
