@@ -356,7 +356,7 @@ class TrainActivity : ComponentActivity() {
             initialTrain = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
             train = initialTrain.copy()
 
-            RTDB.listenForMessages(
+            RTDB.listenForOldMessages(
                 trainId = train.trip.tripShortName,
                 onMessageAdded = {
                     messages = (messages + it).sortedBy { msg -> msg.timestamp }
@@ -406,7 +406,7 @@ class TrainActivity : ComponentActivity() {
             }
 
             onDispose {
-                RTDB.stopListeningForMessages()
+                RTDB.stopListeningForOldMessages()
                 trainTimer.cancel()
             }
         }
@@ -452,7 +452,8 @@ class TrainActivity : ComponentActivity() {
                             TextButton(
                                 onClick = {
                                     RTDB.removeMessage(
-                                        trainId = train.trip.tripShortName,
+                                        chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                        chatRoomId = train.trip.tripShortName,
                                         message = selectedMessage!!
                                     )
                                     selectedMessage = null
@@ -587,7 +588,8 @@ class TrainActivity : ComponentActivity() {
                                             this@TrainActivity
                                         ) { latLng ->
                                             RTDB.sendMessage(
-                                                trainId = train.trip.tripShortName,
+                                                chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                                chatRoomId = train.trip.tripShortName,
                                                 message = message.copy(
                                                     location = latLng.toString(),
                                                 ),
@@ -994,7 +996,8 @@ class TrainActivity : ComponentActivity() {
                                             if (isSendingLocationEnabled) {
                                                 LocationUtils.getCurrentLocation(this@TrainActivity) { latLng ->
                                                     RTDB.sendMessage(
-                                                        trainId = train.trip.tripShortName,
+                                                        chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                                        chatRoomId = train.trip.tripShortName,
                                                         message = message.copy(
                                                             location = latLng.toString(),
                                                         ),
@@ -1009,7 +1012,8 @@ class TrainActivity : ComponentActivity() {
                                             }
 
                                             RTDB.sendMessage(
-                                                trainId = train.trip.tripShortName,
+                                                chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                                chatRoomId = train.trip.tripShortName,
                                                 message = message,
                                             ) {
                                                 if (!it) {
