@@ -23,7 +23,6 @@
             android:exported="false"
             android:label="@string/title_activity_territory"
             android:resizeableActivity="true"
-            android:theme="@style/Theme.OnRail"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".TrainActivity"
@@ -31,12 +30,11 @@
             android:exported="false"
             android:label="@string/title_activity_train"
             android:resizeableActivity="true"
-            android:theme="@style/Theme.OnRail"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.OnRail"
+            android:theme="@style/SplashScreen"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="SplashScreen" parent="Theme.SplashScreen">
+        <item name="postSplashScreenTheme">@style/Theme.OnRail</item>
+        <item name="android:windowSplashScreenBrandingImage" tools:ignore="NewApi">@drawable/ww_logo_with_text</item>
+    </style>
+</resources>

@@ -13,6 +13,10 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
@@ -49,9 +53,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -107,12 +114,24 @@ fun ProfileIcon(
             onDismissRequest = { isAboutDialogOpen = false },
             title = { Text(text = "${stringResource(R.string.app_name)} $appVersionInfo") },
             text = {
-                Text(
-                    text = "A Sínen Vagyunk közösségi vasút információs alkalmazás nem hivatalos " +
-                            "és nem áll kapcsolatban a MÁV Csoporttal. Az alkalmazásban megjelenő " +
-                            "információk a közösség által megosztott adatokon alapulnak, " +
-                            "és nem garantált a pontosságuk."
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "A Sínen Vagyunk közösségi vasút információs alkalmazás nem hivatalos " +
+                                "és nem áll kapcsolatban a MÁV Csoporttal. Az alkalmazásban megjelenő " +
+                                "információk a közösség által megosztott adatokon alapulnak, " +
+                                "és nem garantált a pontosságuk."
+                    )
+                    Text(text = "Készítette:")
+                    Image(
+                        modifier = Modifier.aspectRatio(6 / 1f),
+                        painter = painterResource(com.csakitheone.wholesomeware_brand.R.drawable.ww_logo_with_text),
+                        contentDescription = null,
+                        contentScale = ContentScale.FillWidth,
+                    )
+                }
             },
             confirmButton = {
                 TextButton(

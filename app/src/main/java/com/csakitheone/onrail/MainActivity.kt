@@ -105,6 +105,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.csakitheone.onrail.data.TrainsProvider
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.model.MIArticle
@@ -114,6 +115,7 @@ import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.theme.OnRailTheme
+import com.csakitheone.wholesomeware_brand.WholesomeWare
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -130,6 +132,7 @@ import kotlin.concurrent.timerTask
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        installSplashScreen()
         enableEdgeToEdge()
         setContent {
             MainScreen()
@@ -139,6 +142,8 @@ class MainActivity : ComponentActivity() {
 
         LocationUtils.register(this)
         NotifUtils.init(this)
+
+        WholesomeWare.printSetupInstructions()
     }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

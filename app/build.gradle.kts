@@ -42,7 +42,7 @@ android {
 }
 
 dependencies {
-
+    implementation("com.github.WholesomeWare:WholesomeWareBrandingAndroid:1.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.mapcompose)
     implementation(libs.app.update)
     implementation(libs.app.update.ktx)
+    implementation(libs.androidx.core.splashscreen)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
