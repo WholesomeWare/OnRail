@@ -714,7 +714,7 @@ class MainActivity : ComponentActivity() {
                                             .build()
                                             .launchUrl(
                                                 context,
-                                                "${MAVINFORM.baseUrl}/mavinform".toUri()
+                                                MAVINFORM.mavinformTrainsUrl.toUri()
                                             )
                                     },
                                 ) {

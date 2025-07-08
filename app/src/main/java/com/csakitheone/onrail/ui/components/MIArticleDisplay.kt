@@ -10,9 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
@@ -62,6 +66,25 @@ fun MIArticleDisplay(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    if (article.isDrastic) {
+                        AssistChip(
+                            modifier = Modifier.align(Alignment.Start),
+                            onClick = {},
+                            label = { Text("Rendkívüli változás") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Report,
+                                    contentDescription = null,
+                                )
+                            },
+                            colors = AssistChipDefaults.assistChipColors(
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                labelColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                leadingIconContentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                trailingIconContentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            ),
+                        )
+                    }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -164,6 +187,11 @@ fun MIArticleDisplay(
                 MAVINFORM.fetchArticleContent(article) { htmlContent = it }
             }
         },
+        colors = if (article.isDrastic) CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+        else CardDefaults.cardColors(),
     ) {
         Column(
             modifier = Modifier.padding(8.dp),

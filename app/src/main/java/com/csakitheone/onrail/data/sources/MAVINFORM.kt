@@ -36,6 +36,10 @@ class MAVINFORM {
         VESZPREM(10864, "Veszprém", LatLng(47.1000, 17.9000)),
         ZALA(10865, "Zala", LatLng(46.8000, 16.8500));
 
+        fun getUrl(): String {
+            return "$mavinformTrainsUrl&field_territorial_scope_target_id%5B%5D=$id"
+        }
+
         companion object {
             fun fromName(name: String?): Territory? {
                 return entries.find { it.displayName.equals(name, ignoreCase = true) }
@@ -46,19 +50,17 @@ class MAVINFORM {
     companion object {
 
         val baseUrl = "https://www.mavcsoport.hu"
+        val mavinformTrainsUrl = "$baseUrl/mavinform?field_modalitas_value%5B%5D=vasut"
 
         fun fetchRecentArticles(callback: (List<MIArticle>) -> Unit) {
-            val url = "$baseUrl/mavinform?field_modalitas_value%5B%5D=vasut"
-            fetchArticlesFromUrl(url, callback)
+            fetchArticlesFromUrl(mavinformTrainsUrl, callback)
         }
 
         fun fetchRecentArticlesByTerritory(
             territory: Territory,
             callback: (List<MIArticle>) -> Unit,
         ) {
-            val url =
-                "$baseUrl/mavinform?field_modalitas_value%5B%5D=vasut&field_territorial_scope_target_id%5B%5D=${territory.id}"
-            fetchArticlesFromUrl(url, callback)
+            fetchArticlesFromUrl(territory.getUrl(), callback)
         }
 
         fun fetchArticleContent(
@@ -109,13 +111,15 @@ class MAVINFORM {
                             .split("field-territorial-scope\">")
                             .map { scope -> scope.substringBefore("</").trim() }
                             .filter { scope -> scope.isNotEmpty() }
+                        val isDrastic = it.contains("Rendkívüli változás")
 
                         MIArticle(
                             title = title,
                             link = link,
                             dateValidFrom = dateValidFrom,
                             dateLastUpdated = dateLastUpdated,
-                            scopes = scopes
+                            scopes = scopes,
+                            isDrastic = isDrastic,
                         )
                     }
 

@@ -237,7 +237,7 @@ class TerritoryActivity : ComponentActivity() {
                                                 .build()
                                                 .launchUrl(
                                                     this@TerritoryActivity,
-                                                    "${MAVINFORM.baseUrl}/mavinform".toUri()
+                                                    territory.getUrl().toUri()
                                                 )
                                         },
                                     ) {

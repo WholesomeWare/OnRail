@@ -11,6 +11,7 @@ data class MIArticle(
     val dateValidFrom: String,
     val dateLastUpdated: String,
     val scopes: List<String>,
+    val isDrastic: Boolean = false,
 ) : Parcelable {
     val territoryScopes: List<MAVINFORM.Territory>
         get() = scopes.mapNotNull { MAVINFORM.Territory.fromName(it) }
