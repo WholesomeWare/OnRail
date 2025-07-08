@@ -299,6 +299,9 @@ class MainActivity : ComponentActivity() {
 
                 if (mapFilterMavinform) {
                     MAVINFORM.Territory.entries.forEach { territory ->
+                        val newsCountAtLeast = mavinformArticles
+                            .count { it.scopes.contains(territory.displayName) }
+
                         mapState.addMarker(
                             id = "territory-${territory.id}",
                             x = territory.latLng.normalized.longitude,
@@ -326,7 +329,9 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                                 Badge {
-                                    Text(text = territory.displayName)
+                                    Text(
+                                        text = territory.displayName + if (newsCountAtLeast > 0) " ($newsCountAtLeast+)" else "",
+                                    )
                                 }
                             }
                         }
