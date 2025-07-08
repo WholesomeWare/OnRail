@@ -309,15 +309,39 @@ class MainActivity : ComponentActivity() {
                             relativeOffset = Offset(-.5f, -.5f),
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                val interactionSource = remember { MutableInteractionSource() }
+                                val viewConfiguration = LocalViewConfiguration.current
+                                LaunchedEffect(interactionSource) {
+                                    var isLongPress = false
+                                    interactionSource.interactions.collectLatest {
+                                        when (it) {
+                                            is PressInteraction.Press -> {
+                                                isLongPress = false
+                                                delay(viewConfiguration.longPressTimeoutMillis)
+                                                isLongPress = true
+                                                NotifUtils.showBubbleForTerritory(
+                                                    this@MainActivity,
+                                                    territory
+                                                )
+                                            }
+
+                                            is PressInteraction.Release -> {
+                                                if (!isLongPress) {
+                                                    startActivity(
+                                                        Intent(
+                                                            context,
+                                                            TerritoryActivity::class.java
+                                                        ).putExtra("territoryName", territory.displayName)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                                 FilledIconButton(
-                                    onClick = {
-                                        startActivity(
-                                            Intent(
-                                                context,
-                                                TerritoryActivity::class.java
-                                            ).putExtra("territoryName", territory.displayName)
-                                        )
-                                    },
+                                    onClick = {},
+                                    interactionSource = interactionSource,
                                     colors = IconButtonDefaults.filledIconButtonColors(
                                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
