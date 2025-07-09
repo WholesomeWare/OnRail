@@ -217,9 +217,6 @@ class TrainActivity : ComponentActivity() {
                             contentDescription = null,
                             tint = train.delayColor,
                         )
-                        Badge {
-                            Text(text = stoptime.stop.name)
-                        }
                     }
                 }
             }
