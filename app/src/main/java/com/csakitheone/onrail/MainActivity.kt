@@ -92,6 +92,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -114,7 +115,10 @@ import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.theme.OnRailTheme
-import com.csakitheone.wholesomeware_brand.WholesomeWare
+import com.csakitheone.onrail.ui.theme.colorDelayDrastic
+import com.csakitheone.onrail.ui.theme.colorDelayMajor
+import com.csakitheone.onrail.ui.theme.colorDelayMinor
+import com.csakitheone.onrail.ui.theme.colorDelayNone
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -141,8 +145,6 @@ class MainActivity : ComponentActivity() {
 
         LocationUtils.register(this)
         NotifUtils.init(this)
-
-        WholesomeWare.printSetupInstructions()
     }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -233,12 +235,20 @@ class MainActivity : ComponentActivity() {
                 mapState.removeClusterer("trains")
 
                 mapState.addClusterer("trains") { ids ->
+                    val majorityDelayColor = ids.mapNotNull { id ->
+                        visibleTrains.firstOrNull { it.trip.gtfsId == id }?.delayColor
+                    }.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+
                     {
                         Surface(
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            color = majorityDelayColor ?: MaterialTheme.colorScheme.primaryContainer,
                         ) {
-                            Text(modifier = Modifier.padding(8.dp), text = ids.size.toString())
+                            Text(
+                                modifier = Modifier.padding(8.dp),
+                                text = ids.size.toString(),
+                                color = Color.Black,
+                            )
                         }
                     }
                 }
@@ -287,10 +297,14 @@ class MainActivity : ComponentActivity() {
                                 FilledIconButton(
                                     onClick = {},
                                     interactionSource = interactionSource,
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = train.delayColor,
+                                    ),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Train,
                                         contentDescription = null,
+                                        tint = Color.Black.copy(alpha = .6f),
                                     )
                                 }
                                 Badge {
@@ -312,7 +326,10 @@ class MainActivity : ComponentActivity() {
                             y = territory.latLng.normalized.latitude,
                             relativeOffset = Offset(-.5f, -.5f),
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(
+                                modifier = Modifier.alpha(.5f + newsCount * .2f),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
                                 val interactionSource = remember { MutableInteractionSource() }
                                 val viewConfiguration = LocalViewConfiguration.current
                                 LaunchedEffect(interactionSource) {
@@ -347,6 +364,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 FilledIconButton(
+                                    modifier = Modifier.size((24 + newsCount * 3).dp),
                                     onClick = {},
                                     interactionSource = interactionSource,
                                     colors = IconButtonDefaults.filledIconButtonColors(

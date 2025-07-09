@@ -1,7 +1,14 @@
 package com.csakitheone.onrail.data.model
 
 import android.os.Parcelable
+import android.util.Log
+import androidx.compose.ui.graphics.Color
+import com.csakitheone.onrail.ui.theme.colorDelayDrastic
+import com.csakitheone.onrail.ui.theme.colorDelayMajor
+import com.csakitheone.onrail.ui.theme.colorDelayMinor
+import com.csakitheone.onrail.ui.theme.colorDelayNone
 import kotlinx.parcelize.Parcelize
+import org.json.JSONArray
 import org.json.JSONObject
 
 @Parcelize
@@ -13,14 +20,14 @@ data class EMMAVehiclePosition(
     val heading: Double = 0.0,
     val label: String = "",
     val trip: Trip = Trip(),
-    val prevOrCurrentStop: Stoptime = Stoptime(),
-    val nextStop: Stoptime = Stoptime(),
 ) : Parcelable {
     @Parcelize
     data class Trip(
         val gtfsId: String = "",
         val tripShortName: String = "",
         val tripHeadsign: String = "",
+        val stoptimes: List<Stoptime> = emptyList(),
+        val arrivalStoptime: Stoptime = Stoptime(),
     ) : Parcelable
 
     @Parcelize
@@ -33,7 +40,19 @@ data class EMMAVehiclePosition(
     @Parcelize
     data class Stoptime(
         val stop: Stop = Stop(),
+        val arrivalDelay: Int = 0,
     ) : Parcelable
+
+    val delayMinutes: Int
+        get() = trip.arrivalStoptime.arrivalDelay / 60
+
+    val delayColor: Color
+        get() = when {
+            delayMinutes < 5 -> colorDelayNone
+            delayMinutes < 15 -> colorDelayMinor
+            delayMinutes < 60 -> colorDelayMajor
+            else -> colorDelayDrastic
+        }
 
     override fun toString(): String {
         // Convert the VehiclePosition to a JSON string representation
@@ -48,19 +67,25 @@ data class EMMAVehiclePosition(
                 put("gtfsId", trip.gtfsId)
                 put("tripShortName", trip.tripShortName)
                 put("tripHeadsign", trip.tripHeadsign)
-            })
-            put("prevOrCurrentStop", JSONObject().apply {
-                put("stop", JSONObject().apply {
-                    put("name", prevOrCurrentStop.stop.name)
-                    put("lat", prevOrCurrentStop.stop.lat)
-                    put("lon", prevOrCurrentStop.stop.lon)
+                put("stoptimes", JSONArray().apply {
+                    trip.stoptimes.forEach { stoptime ->
+                        put(JSONObject().apply {
+                            put("stop", JSONObject().apply {
+                                put("name", stoptime.stop.name)
+                                put("lat", stoptime.stop.lat)
+                                put("lon", stoptime.stop.lon)
+                            })
+                            put("arrivalDelay", stoptime.arrivalDelay)
+                        })
+                    }
                 })
-            })
-            put("nextStop", JSONObject().apply {
-                put("stop", JSONObject().apply {
-                    put("name", nextStop.stop.name)
-                    put("lat", nextStop.stop.lat)
-                    put("lon", nextStop.stop.lon)
+                put("arrivalStoptime", JSONObject().apply {
+                    put("stop", JSONObject().apply {
+                        put("name", trip.arrivalStoptime.stop.name)
+                        put("lat", trip.arrivalStoptime.stop.lat)
+                        put("lon", trip.arrivalStoptime.stop.lon)
+                    })
+                    put("arrivalDelay", trip.arrivalStoptime.arrivalDelay)
                 })
             })
         }.toString()
@@ -69,6 +94,8 @@ data class EMMAVehiclePosition(
     companion object {
         fun fromJson(json: String?): EMMAVehiclePosition {
             if (json.isNullOrBlank()) return EMMAVehiclePosition()
+
+            Log.d("EMMAVehiclePosition", "Parsing JSON: $json")
 
             try {
                 val jsonObject = JSONObject(json)
@@ -83,28 +110,33 @@ data class EMMAVehiclePosition(
                     trip = Trip(
                         gtfsId = tripJson.getString("gtfsId"),
                         tripShortName = tripJson.getString("tripShortName"),
-                        tripHeadsign = tripJson.getString("tripHeadsign")
+                        tripHeadsign = tripJson.getString("tripHeadsign"),
+                        stoptimes = tripJson.getJSONArray("stoptimes").let { stoptimesArray ->
+                            List(stoptimesArray.length()) { index ->
+                                val stoptimeJson = stoptimesArray.getJSONObject(index)
+                                Stoptime(
+                                    stop = Stop(
+                                        name = stoptimeJson.getJSONObject("stop").getString("name"),
+                                        lat = stoptimeJson.getJSONObject("stop").getDouble("lat"),
+                                        lon = stoptimeJson.getJSONObject("stop").getDouble("lon")
+                                    ),
+                                    arrivalDelay = stoptimeJson.optInt("arrivalDelay", 0)
+                                )
+                            }
+                        },
+                        arrivalStoptime = Stoptime(
+                            stop = Stop(
+                                name = tripJson.getJSONObject("arrivalStoptime").getJSONObject("stop")
+                                    .getString("name"),
+                                lat = tripJson.getJSONObject("arrivalStoptime").getJSONObject("stop")
+                                    .getDouble("lat"),
+                                lon = tripJson.getJSONObject("arrivalStoptime").getJSONObject("stop")
+                                    .getDouble("lon"),
+                            ),
+                            arrivalDelay = tripJson.getJSONObject("arrivalStoptime")
+                                .optInt("arrivalDelay", 0),
+                        ),
                     ),
-                    prevOrCurrentStop = Stoptime(
-                        stop = Stop(
-                            name = jsonObject.getJSONObject("prevOrCurrentStop").getJSONObject("stop")
-                                .getString("name"),
-                            lat = jsonObject.getJSONObject("prevOrCurrentStop").getJSONObject("stop")
-                                .getDouble("lat"),
-                            lon = jsonObject.getJSONObject("prevOrCurrentStop").getJSONObject("stop")
-                                .getDouble("lon")
-                        )
-                    ),
-                    nextStop = Stoptime(
-                        stop = Stop(
-                            name = jsonObject.getJSONObject("nextStop").getJSONObject("stop")
-                                .getString("name"),
-                            lat = jsonObject.getJSONObject("nextStop").getJSONObject("stop")
-                                .getDouble("lat"),
-                            lon = jsonObject.getJSONObject("nextStop").getJSONObject("stop")
-                                .getDouble("lon")
-                        )
-                    )
                 )
             } catch (_: Exception) {
                 return EMMAVehiclePosition() // Return a default instance if parsing fails

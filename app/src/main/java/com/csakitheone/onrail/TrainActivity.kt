@@ -31,7 +31,9 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
@@ -59,6 +61,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -93,6 +96,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -195,33 +199,28 @@ class TrainActivity : ComponentActivity() {
                 LatLng(47.4979, 19.0402)
             }
 
-            val prevOrCurrentStopLatLng = LatLng(
-                train.prevOrCurrentStop.stop.lat,
-                train.prevOrCurrentStop.stop.lon,
-            )
-            val nextStopLatLng = LatLng(
-                train.nextStop.stop.lat,
-                train.nextStop.stop.lon,
-            )
-
             mapState.removeAllMarkers()
 
-            if (LocationUtils.current == LatLng.ZERO) {
-                LocationUtils.getLastKnownLocation(this@TrainActivity) {}
-            } else {
+            train.trip.stoptimes.forEach { stoptime ->
+                val latLng = LatLng(stoptime.stop.lat, stoptime.stop.lon)
                 mapState.addMarker(
-                    id = "user",
-                    x = LocationUtils.current.normalized.longitude,
-                    y = LocationUtils.current.normalized.latitude,
+                    id = "stop-${stoptime.stop.name}",
+                    x = latLng.normalized.longitude,
+                    y = latLng.normalized.latitude,
                     relativeOffset = Offset(-.5f, -.5f),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clip(CircleShape)
-                            .background(Color.Blue)
-                            .alpha(.2f),
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_octagon),
+                            contentDescription = null,
+                            tint = train.delayColor,
+                        )
+                        Badge {
+                            Text(text = stoptime.stop.name)
+                        }
+                    }
                 }
             }
 
@@ -239,10 +238,14 @@ class TrainActivity : ComponentActivity() {
                             onClick = {
                                 isTrainInfoDialogOpen = true
                             },
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = train.delayColor,
+                            ),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Train,
                                 contentDescription = "Train position",
+                                tint = Color.Black.copy(alpha = .6f),
                             )
                         }
                         Badge {
@@ -251,58 +254,6 @@ class TrainActivity : ComponentActivity() {
                     }
                 }
             }
-
-            /*
-            mapState.addMarker(
-                id = "prevOrCurrentStop",
-                x = prevOrCurrentStopLatLng.normalized.longitude,
-                y = prevOrCurrentStopLatLng.normalized.latitude,
-                relativeOffset = Offset(-.5f, -.5f),
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    FilledIconButton(
-                        onClick = {
-                            //TODO: Open stop details
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Flag,
-                            contentDescription = "Prev/Current Stop",
-                        )
-                    }
-                    Badge {
-                        Text(text = train.prevOrCurrentStop.stop.name)
-                    }
-                }
-            }
-
-            mapState.addMarker(
-                id = "nextStop",
-                x = nextStopLatLng.normalized.longitude,
-                y = nextStopLatLng.normalized.latitude,
-                relativeOffset = Offset(-.5f, -.5f),
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    FilledIconButton(
-                        onClick = {
-                            //TODO: Open stop details
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Flag,
-                            contentDescription = "Next Stop",
-                        )
-                    }
-                    Badge {
-                        Text(text = train.nextStop.stop.name)
-                    }
-                }
-            }
-            */
 
             messages
                 .filter { it.location.isNotBlank() }
@@ -338,6 +289,25 @@ class TrainActivity : ComponentActivity() {
                         }
                     }
                 }
+
+            if (LocationUtils.current == LatLng.ZERO) {
+                LocationUtils.getLastKnownLocation(this@TrainActivity) {}
+            } else {
+                mapState.addMarker(
+                    id = "user",
+                    x = LocationUtils.current.normalized.longitude,
+                    y = LocationUtils.current.normalized.latitude,
+                    relativeOffset = Offset(-.5f, -.5f),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(Color.Blue)
+                            .alpha(.2f),
+                    )
+                }
+            }
 
             mapState.scrollTo(
                 x = latestLatLng.normalized.longitude,
@@ -424,9 +394,14 @@ class TrainActivity : ComponentActivity() {
                     title = { Text(text = train.trip.tripShortName) },
                     text = {
                         Text(
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
                             text = "Végállomás: ${train.trip.tripHeadsign}\n\n" +
                                     "Jelenlegi pozíció:\n${train.lat}, ${train.lon}\n\n" +
-                                    "Sebesség: ${train.speed}"
+                                    "Sebesség: ${train.speed}\n\n" +
+                                    "Megállók (késéssel):\n" +
+                                    train.trip.stoptimes.joinToString("\n") { stoptime ->
+                                        "${stoptime.stop.name} (${stoptime.arrivalDelay / 60} perc)"
+                                    }
                         )
                     },
                     confirmButton = {
@@ -950,7 +925,7 @@ class TrainActivity : ComponentActivity() {
                                 if (selectedTab == TAB_MAP) {
                                     Text(
                                         modifier = Modifier.padding(horizontal = 8.dp),
-                                        text = "Végállomás: ${train.trip.tripHeadsign}",
+                                        text = "Késés: ${train.delayMinutes} perc",
                                     )
                                 } else {
                                     TextField(

@@ -1,6 +1,5 @@
 package com.csakitheone.onrail.data.sources
 
-import android.util.Log
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +10,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 class EMMA {
@@ -30,7 +32,19 @@ class EMMA {
                         neLon: 22.8,
                         modes: [RAIL, RAIL_REPLACEMENT_BUS]
                     ) {
-                        trip { gtfsId tripShortName tripHeadsign }
+                        trip {
+                            gtfsId
+                            tripShortName
+                            tripHeadsign
+                            stoptimes {
+                                stop { name lat lon }
+                                arrivalDelay
+                            }
+                            arrivalStoptime {
+                                stop { name lat lon }
+                                arrivalDelay
+                            }
+                        }
                         vehicleId
                         lat lon
                         label speed heading
@@ -67,6 +81,19 @@ class EMMA {
 
                 callback(vehicles)
             }
+        }
+
+        private fun fetchDelay(gtfsId: String) {
+            val date: String? = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val query = """
+                {
+                    trip(
+                        id: \"" + $gtfsId + "\", serviceDay: \"" + $date + "\"
+                    ) {
+                        stoptimes { arrivalDelay }
+                    }
+                }
+            """.trimIndent()
         }
 
     }
