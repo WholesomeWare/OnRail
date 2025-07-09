@@ -99,8 +99,6 @@ data class EMMAVehiclePosition(
         fun fromJson(json: String?): EMMAVehiclePosition {
             if (json.isNullOrBlank()) return EMMAVehiclePosition()
 
-            Log.d("EMMAVehiclePosition", "Parsing JSON: $json")
-
             try {
                 val jsonObject = JSONObject(json)
                 val tripJson = jsonObject.getJSONObject("trip")

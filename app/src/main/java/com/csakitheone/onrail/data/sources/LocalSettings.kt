@@ -9,35 +9,41 @@ import java.io.File
 class LocalSettings {
     companion object {
 
+        var savedTrainTripNames by mutableStateOf(emptySet<String>())
+
         fun load(context: Context) {
-            val settingsFile = File(context.dataDir, "settings.json")
+            //TODO: Remove this after a few releases
+            val oldSettingsFile = File(context.dataDir, "settings.json")
+            if (oldSettingsFile.exists()) {
+                val json = oldSettingsFile.readText()
+                if (json.contains("\"savedTrainTripNames\":")) {
+                    savedTrainTripNames = json.substringAfter("\"savedTrainTripNames\": [")
+                        .substringBefore("]").split(",").map { it.trim().removeSurrounding("\"") }
+                        .filter { it.isNotEmpty() }.toSet()
+                }
+                save(context)
+                oldSettingsFile.delete()
+                return
+            }
+
+            val settingsFile = File(context.dataDir, "settings.ini")
             if (!settingsFile.exists()) {
                 return
             }
-            val json = settingsFile.readText()
-            if (json.contains("\"savedTrainTripNames\":")) {
-                savedTrainTripNames = json.substringAfter("\"savedTrainTripNames\": [")
-                    .substringBefore("]").split(",").map { it.trim().removeSurrounding("\"") }
-                    .filter { it.isNotEmpty() }.toSet()
+            val settings = settingsFile.readLines().associate { line ->
+                val (key, value) = line.split("=", limit = 2).map { it.trim() }
+                key to value
             }
+            savedTrainTripNames = settings["savedTrainTripNames"]?.split(",")?.map { it.trim() }?.toSet() ?: emptySet()
         }
 
         fun save(context: Context) {
-            val settingsFile = File(context.dataDir, "settings.json")
-            val json = """
-                {
-                    "savedTrainTripNames": ${
-                savedTrainTripNames.joinToString(
-                    prefix = "[",
-                    postfix = "]"
-                ) { "\"$it\"" }
-            }
-                }
+            val settingsFile = File(context.dataDir, "settings.ini")
+            val ini = """
+                savedTrainTripNames= ${savedTrainTripNames.joinToString(", ")}
             """
-            settingsFile.writeText(json)
+            settingsFile.writeText(ini)
         }
-
-        var savedTrainTripNames by mutableStateOf(emptySet<String>())
 
     }
 }

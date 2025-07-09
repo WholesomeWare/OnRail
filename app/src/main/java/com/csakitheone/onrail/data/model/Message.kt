@@ -49,6 +49,14 @@ data class Message(
             messageType = TYPE_LOCATION_PING,
             content = "Hely küldése üzenet nélkül",
         )
+        val REPORT_TEMPERATURE_HIGH = report(
+            content = "Nincs légkondi / meleg van",
+            color = COLOR_WARNING,
+        )
+        val REPORT_TEMPERATURE_LOW = report(
+            content = "Nincs fűtés / hideg van",
+            color = COLOR_WARNING,
+        )
         val REPORT_OPTION_DELAY_MINOR = report(
             content = "Kis késés (5-15 perc)",
             color = COLOR_WARNING,
@@ -76,14 +84,6 @@ data class Message(
             content = "Tömeg / zsúfoltság",
             color = COLOR_WARNING,
         )
-        val REPORT_TEMPERATURE_HIGH = report(
-            content = "Nincs légkondi / magas hőmérséklet",
-            color = COLOR_WARNING,
-        )
-        val REPORT_TEMPERATURE_LOW = report(
-            content = "Nincs fűtés / alacsony hőmérséklet",
-            color = COLOR_WARNING,
-        )
         val REPORT_POLICE_ACTIVITY = report(
             content = "Rendőrségi intézkedés",
             color = Color.Blue.toArgb(),
@@ -91,6 +91,8 @@ data class Message(
 
         val reportOptions = listOf(
             LOCATION_PING,
+            REPORT_TEMPERATURE_HIGH,
+            REPORT_TEMPERATURE_LOW,
             REPORT_OPTION_DELAY_MINOR,
             REPORT_OPTION_DELAY_MODERATE,
             REPORT_OPTION_DELAY_MAJOR,
@@ -99,8 +101,6 @@ data class Message(
             REPORT_TECHNICAL_ISSUE,
             REPORT_EMERGENCY_ACCIDENT,
             REPORT_CROWDING,
-            REPORT_TEMPERATURE_HIGH,
-            REPORT_TEMPERATURE_LOW,
             REPORT_POLICE_ACTIVITY,
         )
 

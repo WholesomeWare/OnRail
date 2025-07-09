@@ -21,11 +21,13 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -47,6 +49,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Remove
@@ -65,6 +68,7 @@ import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -130,6 +134,7 @@ import ovh.plrapps.mapcompose.api.removeAllMarkers
 import ovh.plrapps.mapcompose.api.removeClusterer
 import ovh.plrapps.mapcompose.api.scrollTo
 import ovh.plrapps.mapcompose.ui.MapUI
+import ovh.plrapps.mapcompose.ui.layout.Fill
 import ovh.plrapps.mapcompose.ui.state.markers.model.RenderingStrategy
 import java.util.Timer
 import kotlin.concurrent.timerTask
@@ -162,6 +167,10 @@ class MainActivity : ComponentActivity() {
             val TAB_MAP = 0
             val TAB_MAVINFORM = 1
 
+            val MAP_FILTER_ALL_TRAINS = "Vonatok"
+            val MAP_FILTER_MAVINFORM = "MÁVINFORM"
+            val MAP_FILTER_SAVED_TRAINS = "Mentett vonatok"
+
             var motdText by remember { mutableStateOf("") }
             var isMotdCollapsed by rememberSaveable { mutableStateOf(false) }
             var isLoading by remember { mutableStateOf(true) }
@@ -171,9 +180,9 @@ class MainActivity : ComponentActivity() {
             var isUpdateInfoDialogOpen by remember { mutableStateOf(false) }
             var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
 
-            var mapFilterTrains by remember { mutableStateOf(true) }
-            var mapFilterMavinform by remember { mutableStateOf(false) }
+            var isSearchActive by remember { mutableStateOf(false) }
             var searchQuery by remember { mutableStateOf("") }
+            var selectedMapFilter by remember { mutableStateOf(MAP_FILTER_ALL_TRAINS) }
             var isLoadingLocation by remember { mutableStateOf(false) }
 
             val trainsLastUpdatedText by remember(isLoading, trainsLastUpdated) {
@@ -187,11 +196,21 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            val visibleTrains by remember(trains, searchQuery) {
+            val visibleTrains by remember(
+                trains,
+                selectedMapFilter,
+                searchQuery,
+            ) {
                 derivedStateOf {
                     trains.filter { train ->
-                        train.trip.tripShortName.contains(searchQuery, ignoreCase = true) ||
-                                train.trip.tripHeadsign.contains(searchQuery, ignoreCase = true)
+                        val isSavedTrain =
+                            selectedMapFilter != MAP_FILTER_SAVED_TRAINS || LocalSettings.savedTrainTripNames.contains(
+                                train.trip.tripShortName
+                            )
+                        val isSearched =
+                            train.trip.tripShortName.contains(searchQuery, ignoreCase = true) ||
+                                    train.trip.tripHeadsign.contains(searchQuery, ignoreCase = true)
+                        isSavedTrain && isSearched
                     }
                 }
             }
@@ -230,8 +249,7 @@ class MainActivity : ComponentActivity() {
                 LocationUtils.current,
                 visibleTrains,
                 MAVINFORM.articles,
-                mapFilterTrains,
-                mapFilterMavinform,
+                selectedMapFilter,
             ) {
                 mapState.removeAllMarkers()
                 mapState.removeClusterer("trains")
@@ -239,11 +257,12 @@ class MainActivity : ComponentActivity() {
                 mapState.addClusterer("trains") { ids ->
                     val worstDelay = ids.mapNotNull { id ->
                         visibleTrains.firstOrNull { it.trip.gtfsId == id }?.delayMinutes
-                    }.max()
+                    }.maxOrNull() ?: 0
                     val worstDelayColor = EMMAVehiclePosition.getDelayColor(worstDelay)
 
                     return@addClusterer {
                         Surface(
+                            modifier = Modifier.size(42.dp),
                             shape = CircleShape,
                             color = worstDelayColor,
                         ) {
@@ -251,12 +270,16 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(8.dp),
                                 text = ids.size.toString(),
                                 color = Color.Black,
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
                 }
 
-                if (mapFilterTrains) {
+                if (listOf(MAP_FILTER_ALL_TRAINS, MAP_FILTER_SAVED_TRAINS).contains(
+                        selectedMapFilter
+                    )
+                ) {
                     visibleTrains.forEach { train ->
                         val latLng = LatLng(train.lat, train.lon)
                         mapState.addMarker(
@@ -318,7 +341,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (mapFilterMavinform) {
+                if (selectedMapFilter == MAP_FILTER_MAVINFORM) {
                     MAVINFORM.Territory.entries.forEach { territory ->
                         val newsCount = MAVINFORM.articles
                             .count { it.scopes.contains(territory.displayName) }
@@ -697,13 +720,24 @@ class MainActivity : ComponentActivity() {
                                 .animateContentSize(),
                             onClick = { isMotdCollapsed = !isMotdCollapsed },
                         ) {
-                            Text(
-                                modifier = Modifier.padding(8.dp),
-                                text = motdText,
-                                style = MaterialTheme.typography.bodySmall,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = if (isMotdCollapsed) 1 else Int.MAX_VALUE,
-                            )
+                            Row {
+                                Text(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp),
+                                    text = motdText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = if (isMotdCollapsed) 1 else Int.MAX_VALUE,
+                                )
+                                AnimatedVisibility(!isMotdCollapsed && motdText.length > 100) {
+                                    Icon(
+                                        modifier = Modifier.padding(8.dp),
+                                        imageVector = Icons.Default.KeyboardArrowUp,
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -748,7 +782,9 @@ class MainActivity : ComponentActivity() {
                             AnimatedVisibility(selectedTab != TAB_MAVINFORM && MAVINFORM.articles.isNotEmpty()) {
                                 Text(
                                     modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
-                                    text = MAVINFORM.articles.first().dateLastUpdated.substringAfter(" ")
+                                    text = MAVINFORM.articles.first().dateLastUpdated.substringAfter(
+                                        " "
+                                    )
                                 )
                             }
                         }
@@ -802,77 +838,95 @@ class MainActivity : ComponentActivity() {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(horizontal = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    modifier = Modifier
-                                        .padding(8.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceContainer),
-                                    imageVector = Icons.Default.FilterList,
-                                    contentDescription = "Szűrők",
-                                )
-                                ElevatedFilterChip(
-                                    selected = mapFilterTrains,
-                                    onClick = { mapFilterTrains = !mapFilterTrains },
-                                    label = { Text(text = "Vonatok") },
-                                )
-                                ElevatedFilterChip(
-                                    selected = mapFilterMavinform,
-                                    onClick = { mapFilterMavinform = !mapFilterMavinform },
-                                    label = { Text(text = "MÁVINFORM") },
-                                )
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
                                     .navigationBarsPadding()
                                     .padding(8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 HorizontalFloatingToolbar(
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .animateContentSize(),
                                     expanded = false,
                                 ) {
-                                    TextField(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(MaterialTheme.shapes.extraLarge),
-                                        value = searchQuery,
-                                        onValueChange = { searchQuery = it.take(100) },
-                                        placeholder = {
-                                            Text(
-                                                text = "Keresés járatszám vagy végállomás alapján",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
+                                    AnimatedVisibility(!isSearchActive) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .horizontalScroll(rememberScrollState()),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            IconButton(
+                                                onClick = { isSearchActive = true },
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Search,
+                                                    contentDescription = null
+                                                )
+                                            }
+                                            FilterChip(
+                                                selected = selectedMapFilter == MAP_FILTER_ALL_TRAINS,
+                                                onClick = {
+                                                    selectedMapFilter = MAP_FILTER_ALL_TRAINS
+                                                },
+                                                label = { Text(text = "Vonatok") },
                                             )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                imageVector = Icons.Default.Search,
-                                                contentDescription = null
+                                            FilterChip(
+                                                selected = selectedMapFilter == MAP_FILTER_MAVINFORM,
+                                                onClick = {
+                                                    selectedMapFilter = MAP_FILTER_MAVINFORM
+                                                },
+                                                label = { Text(text = "MÁVINFORM") },
                                             )
-                                        },
-                                        trailingIcon = {
-                                            if (searchQuery.isNotEmpty()) {
+                                            FilterChip(
+                                                selected = selectedMapFilter == MAP_FILTER_SAVED_TRAINS,
+                                                onClick = {
+                                                    selectedMapFilter = MAP_FILTER_SAVED_TRAINS
+                                                },
+                                                label = { Text(text = "Mentett vonatok") },
+                                            )
+                                        }
+                                    }
+                                    AnimatedVisibility(isSearchActive) {
+                                        TextField(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(MaterialTheme.shapes.extraLarge),
+                                            value = searchQuery,
+                                            onValueChange = { searchQuery = it.take(100) },
+                                            placeholder = {
+                                                Text(
+                                                    text = "Keresés járatszám vagy végállomás alapján",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Default.Search,
+                                                    contentDescription = null
+                                                )
+                                            },
+                                            trailingIcon = {
                                                 IconButton(
-                                                    onClick = { searchQuery = "" },
+                                                    onClick = {
+                                                        if (searchQuery.isEmpty()) {
+                                                            isSearchActive = false
+                                                        }
+                                                        searchQuery = ""
+                                                    },
                                                 ) {
                                                     Icon(
                                                         imageVector = Icons.Default.Clear,
-                                                        contentDescription = "Törlés",
+                                                        contentDescription = null,
                                                     )
                                                 }
-                                            }
-                                        },
-                                        maxLines = 1,
-                                    )
+                                            },
+                                            maxLines = 1,
+                                        )
+                                    }
                                 }
                                 FloatingActionButton(
                                     onClick = {
