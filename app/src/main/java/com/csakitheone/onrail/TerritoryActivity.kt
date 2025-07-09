@@ -10,10 +10,13 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -100,8 +103,7 @@ class TerritoryActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .imePadding()
-                        .systemBarsPadding(),
+                        .imePadding(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Row(
@@ -219,10 +221,10 @@ class TerritoryActivity : ComponentActivity() {
                         TAB_ARTICLES -> {
                             LazyColumn(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(8.dp),
+                                    .weight(1f),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(8.dp),
                             ) {
                                 items(items = mavinformArticles) { article ->
                                     MIArticleDisplay(article = article)
@@ -254,6 +256,8 @@ class TerritoryActivity : ComponentActivity() {
                                             text = "További hírek a weboldalon",
                                         )
                                     }
+
+                                    Spacer(modifier = Modifier.navigationBarsPadding())
                                 }
                             }
                         }

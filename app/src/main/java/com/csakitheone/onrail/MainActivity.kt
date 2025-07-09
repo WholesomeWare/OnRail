@@ -21,6 +21,7 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -107,6 +108,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowInsetsCompat
 import com.csakitheone.onrail.data.TrainsProvider
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.sources.LocalSettings
@@ -525,8 +527,7 @@ class MainActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .imePadding()
-                        .systemBarsPadding(),
+                        .imePadding(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Row(
@@ -756,10 +757,10 @@ class MainActivity : ComponentActivity() {
                     when (selectedTab) {
                         TAB_MAVINFORM -> LazyColumn(
                             modifier = Modifier
-                                .weight(1f)
-                                .padding(8.dp),
+                                .weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(8.dp),
                         ) {
                             items(items = MAVINFORM.articles) { article ->
                                 MIArticleDisplay(article = article)
@@ -791,6 +792,7 @@ class MainActivity : ComponentActivity() {
                                         text = "További hírek a weboldalon",
                                     )
                                 }
+                                Spacer(modifier = Modifier.navigationBarsPadding())
                             }
                         }
 
