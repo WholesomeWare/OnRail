@@ -235,14 +235,15 @@ class MainActivity : ComponentActivity() {
                 mapState.removeClusterer("trains")
 
                 mapState.addClusterer("trains") { ids ->
-                    val majorityDelayColor = ids.mapNotNull { id ->
-                        visibleTrains.firstOrNull { it.trip.gtfsId == id }?.delayColor
-                    }.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+                    val worstDelay = ids.mapNotNull { id ->
+                        visibleTrains.firstOrNull { it.trip.gtfsId == id }?.delayMinutes
+                    }.max()
+                    val worstDelayColor = EMMAVehiclePosition.getDelayColor(worstDelay)
 
-                    {
+                    return@addClusterer {
                         Surface(
                             shape = CircleShape,
-                            color = majorityDelayColor ?: MaterialTheme.colorScheme.primaryContainer,
+                            color = worstDelayColor,
                         ) {
                             Text(
                                 modifier = Modifier.padding(8.dp),

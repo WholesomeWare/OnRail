@@ -47,12 +47,7 @@ data class EMMAVehiclePosition(
         get() = trip.arrivalStoptime.arrivalDelay / 60
 
     val delayColor: Color
-        get() = when {
-            delayMinutes < 5 -> colorDelayNone
-            delayMinutes < 15 -> colorDelayMinor
-            delayMinutes < 60 -> colorDelayMajor
-            else -> colorDelayDrastic
-        }
+        get() = getDelayColor(delayMinutes)
 
     override fun toString(): String {
         // Convert the VehiclePosition to a JSON string representation
@@ -92,6 +87,15 @@ data class EMMAVehiclePosition(
     }
 
     companion object {
+        fun getDelayColor(delayMinutes: Int): Color {
+            return when {
+                delayMinutes < 5 -> colorDelayNone
+                delayMinutes < 15 -> colorDelayMinor
+                delayMinutes < 60 -> colorDelayMajor
+                else -> colorDelayDrastic
+            }
+        }
+
         fun fromJson(json: String?): EMMAVehiclePosition {
             if (json.isNullOrBlank()) return EMMAVehiclePosition()
 
