@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SignalCellularOff
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
@@ -65,7 +66,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedFilterChip
@@ -465,27 +468,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            if (!hasInternet) {
-                AlertDialog(
-                    onDismissRequest = {},
-                    title = { Text(text = "Nincs internetkapcsolat") },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                startActivity(
-                                    Intent(Settings.ACTION_WIFI_SETTINGS)
-                                )
-                            },
-                        ) {
-                            Text(text = "Beállítások")
-                        }
-                        TextButton(onClick = { finish() }) {
-                            Text(text = "Kilépés")
-                        }
-                    },
-                )
-            }
-
             if (isUpdateInfoDialogOpen) {
                 AlertDialog(
                     onDismissRequest = { isUpdateInfoDialogOpen = false },
@@ -627,7 +609,11 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxWidth()
                                     .padding(horizontal = 8.dp)
                             ) {
-                                Text(stringResource(R.string.app_name))
+                                Text(
+                                    text = stringResource(R.string.app_name),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                                 Text(
                                     modifier = Modifier.clickable {
                                         isUpdateInfoDialogOpen = true
@@ -635,6 +621,8 @@ class MainActivity : ComponentActivity() {
                                     text = trainsLastUpdatedText,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -734,6 +722,48 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
                         )
+                    }
+
+                    if (!hasInternet) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                            ),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SignalCellularOff,
+                                    contentDescription = null,
+                                )
+                                Text(
+                                    modifier = Modifier.weight(1f)
+                                        .padding(start = 8.dp),
+                                    text = "Nincs internet kapcsolat",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Button(
+                                    onClick = {
+                                        startActivity(
+                                            Intent(Settings.ACTION_WIFI_SETTINGS)
+                                        )
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError,
+                                    ),
+                                ) {
+                                    Text(text = "Beállítások")
+                                }
+                            }
+                        }
                     }
 
                     if (AppUpdateUtils.isUpdateAvailable) {
