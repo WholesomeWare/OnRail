@@ -65,6 +65,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedFilterChip
@@ -190,6 +191,7 @@ class MainActivity : ComponentActivity() {
             var isSearchActive by remember { mutableStateOf(false) }
             var searchQuery by remember { mutableStateOf("") }
             var selectedMapFilter by remember { mutableStateOf(MAP_FILTER_ALL_TRAINS) }
+            var showMarkerBadges by remember { mutableStateOf(true) }
             var isLoadingLocation by remember { mutableStateOf(false) }
 
             val trainsLastUpdatedText by remember(isLoading, trainsLastUpdated) {
@@ -205,8 +207,8 @@ class MainActivity : ComponentActivity() {
             }
             val visibleTrains by remember(
                 trains,
-                selectedMapFilter,
                 searchQuery,
+                selectedMapFilter,
             ) {
                 derivedStateOf {
                     trains.filter { train ->
@@ -264,6 +266,7 @@ class MainActivity : ComponentActivity() {
                 visibleTrains,
                 MAVINFORM.articles,
                 selectedMapFilter,
+                showMarkerBadges,
             ) {
                 mapState.removeAllMarkers()
                 mapState.removeClusterer("trains")
@@ -363,8 +366,8 @@ class MainActivity : ComponentActivity() {
                                         contentDescription = null,
                                     )
                                 }
-                                Badge {
-                                    Text(text = train.trip.tripShortName)
+                                if (showMarkerBadges) {
+                                    Badge { Text(text = train.trip.tripShortName) }
                                 }
                             }
                         }
@@ -433,10 +436,12 @@ class MainActivity : ComponentActivity() {
                                         contentDescription = null,
                                     )
                                 }
-                                Badge {
-                                    Text(
-                                        text = territory.displayName + if (newsCount > 0) " ($newsCount)" else "",
-                                    )
+                                if (showMarkerBadges) {
+                                    Badge {
+                                        Text(
+                                            text = territory.displayName + if (newsCount > 0) " ($newsCount)" else "",
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -938,6 +943,22 @@ class MainActivity : ComponentActivity() {
                                                 },
                                                 label = { Text(text = "Mentett vonatok") },
                                             )
+                                            Row(
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        showMarkerBadges = !showMarkerBadges
+                                                    },
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Checkbox(
+                                                    checked = showMarkerBadges,
+                                                    onCheckedChange = { showMarkerBadges = it },
+                                                )
+                                                Text(
+                                                    text = "Címkék mutatása",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                )
+                                            }
                                         }
                                     }
                                     AnimatedVisibility(isSearchActive) {
