@@ -17,6 +17,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -131,35 +133,37 @@ fun ProfileIcon(
                         contentDescription = null,
                         contentScale = ContentScale.FillWidth,
                     )
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            activity?.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://www.patreon.com/c/wholesomeware".toUri()
+                                )
+                            )
+                        },
+                    ) {
+                        Text(text = "Fejlesztő támogatása")
+                    }
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            activity?.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://github.com/WholesomeWare/OnRail".toUri()
+                                )
+                            )
+                        },
+                    ) {
+                        Text(text = "App forráskódja GitHub-on")
+                    }
                 }
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        activity?.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                "https://github.com/WholesomeWare/OnRail".toUri()
-                            )
-                        )
-                    },
-                ) {
-                    Text(text = "GitHub")
-                }
-                TextButton(
-                    onClick = {
-                        activity?.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                "https://play.google.com/store/apps/details?id=com.csakitheone.onrail".toUri()
-                            )
-                        )
-                    },
-                ) {
-                    Text(text = "Play Áruház")
-                }
                 TextButton(onClick = { isAboutDialogOpen = false }) {
-                    Text(text = "Ok")
+                    Text(text = "Bezárás")
                 }
             },
         )
