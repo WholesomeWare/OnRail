@@ -77,22 +77,14 @@ class MAVINFORM {
 
         fun fetchArticles(context: Context, callback: (List<MIArticle>) -> Unit = {}) {
             if (!NetworkUtils.hasInternet(context)) {
-                Log.d("MAVINFORM", "No internet connection, loading cached articles.")
-                val cachedArticlesDir = File(context.cacheDir, "mavinform")
-                if (!cachedArticlesDir.exists()) {
-                    callback(emptyList())
-                    return
-                }
-                val cachedArticles = cachedArticlesDir.listFiles()?.mapNotNull { file ->
-                    if (file.extension == "html") {
-                        MIArticle.fromHtml(file.readText())
-                    } else {
-                        null
-                    }
-                } ?: emptyList()
+                val cachedArticles = loadCachedArticles(context)
                 articles = cachedArticles.sortedByDescending { it.dateValidFrom }
                 callback(cachedArticles.sortedByDescending { it.dateValidFrom })
                 return
+            }
+            else {
+                val cacheDir = File(context.cacheDir, "mavinform")
+                if (cacheDir.exists()) cacheDir.deleteRecursively()
             }
 
             val urls = listOf(mavinformTrainsUrl) + (1..5).map { "$mavinformTrainsUrl&page=$it" }
@@ -103,10 +95,11 @@ class MAVINFORM {
                 fetchArticlesFromUrl(url) { newArticles ->
                     articles += newArticles
 
-                    newArticles.forEach { article ->
+                    newArticles.forEachIndexed { index, article ->
                         val cacheFile = File(context.cacheDir, "mavinform/${article.title}.html")
                         cacheFile.parentFile?.mkdirs()
                         GlobalScope.launch {
+                            Thread.sleep(index * 100L)
                             cacheFile.writeText(article.toString())
                         }
                     }
@@ -123,7 +116,7 @@ class MAVINFORM {
         fun fetchArticleContent(
             context: Context,
             article: MIArticle,
-            callback: (String) -> Unit = {},
+            callback: () -> Unit = {},
         ) {
             if (!NetworkUtils.hasInternet(context)) {
                 return
@@ -145,8 +138,26 @@ class MAVINFORM {
                         it
                     }
                 }
-                callback(htmlContent)
+                callback()
             }
+        }
+
+        private fun loadCachedArticles(context: Context): List<MIArticle> {
+            val cachedArticlesDir = File(context.cacheDir, "mavinform")
+            if (!cachedArticlesDir.exists()) return emptyList()
+
+            return cachedArticlesDir.listFiles()?.mapNotNull { file ->
+                if (file.extension == "html") {
+                    try {
+                        MIArticle.fromHtml(file.readText())
+                    } catch (e: Exception) {
+                        Log.e("MAVINFORM", "Error reading cached article: ${e.message}")
+                        null
+                    }
+                } else {
+                    null
+                }
+            } ?: emptyList()
         }
 
         @OptIn(DelicateCoroutinesApi::class)
