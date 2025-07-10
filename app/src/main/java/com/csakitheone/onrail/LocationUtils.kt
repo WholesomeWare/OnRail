@@ -47,7 +47,18 @@ class LocationUtils {
             }
         }
 
-        fun requestPermissions(callback: (Boolean) -> Unit) {
+        fun requestPermissions(context: Context, callback: (Boolean) -> Unit) {
+            val isFineLocationGranted = ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (isFineLocationGranted) {
+                Log.d("LocationUtils", "Location permission already granted")
+                callback(true)
+                return
+            }
+
             onPermissionGranted = callback
 
             try {

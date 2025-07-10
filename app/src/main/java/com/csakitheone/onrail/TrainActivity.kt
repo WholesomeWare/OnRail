@@ -538,7 +538,7 @@ class TrainActivity : ComponentActivity() {
                             checked = isSendingLocationEnabled,
                             onCheckedChange = { isEnabled ->
                                 if (isEnabled) {
-                                    LocationUtils.requestPermissions { isGranted ->
+                                    LocationUtils.requestPermissions(this@TrainActivity) { isGranted ->
                                         isSendingLocationEnabled = isGranted
                                     }
                                 } else {
@@ -892,7 +892,7 @@ class TrainActivity : ComponentActivity() {
                                         TextButton(
                                             onClick = {
                                                 isSendingLocationHintVisible = false
-                                                LocationUtils.requestPermissions { isGranted ->
+                                                LocationUtils.requestPermissions(this@TrainActivity) { isGranted ->
                                                     isSendingLocationEnabled = isGranted
                                                 }
                                             },
@@ -913,7 +913,7 @@ class TrainActivity : ComponentActivity() {
                             checked = isSendingLocationEnabled,
                             onCheckedChange = { isEnabled ->
                                 if (isEnabled) {
-                                    LocationUtils.requestPermissions { isGranted ->
+                                    LocationUtils.requestPermissions(this@TrainActivity) { isGranted ->
                                         isSendingLocationEnabled = isGranted
                                     }
                                 } else {

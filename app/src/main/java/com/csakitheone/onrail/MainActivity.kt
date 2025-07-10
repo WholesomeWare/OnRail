@@ -1044,7 +1044,7 @@ class MainActivity : ComponentActivity() {
                                         if (isLoadingLocation) return@FloatingActionButton
 
                                         isLoadingLocation = true
-                                        LocationUtils.requestPermissions { granted ->
+                                        LocationUtils.requestPermissions(this@MainActivity) { granted ->
                                             if (!granted) {
                                                 isLoadingLocation = false
                                                 return@requestPermissions
