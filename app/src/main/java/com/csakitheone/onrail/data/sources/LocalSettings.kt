@@ -30,11 +30,15 @@ class LocalSettings {
             if (!settingsFile.exists()) {
                 return
             }
-            val settings = settingsFile.readLines().associate { line ->
-                val (key, value) = line.split("=", limit = 2).map { it.trim() }
-                key to value
-            }
-            savedTrainTripNames = settings["savedTrainTripNames"]?.split(",")?.map { it.trim() }?.toSet() ?: emptySet()
+            val settings = settingsFile.readLines()
+                .filter { it.contains("=") }
+                .associate { line ->
+                    val (key, value) = line.split("=", limit = 2).map { it.trim() }
+                    key to value
+                }
+            savedTrainTripNames =
+                settings["savedTrainTripNames"]?.split(",")?.map { it.trim() }?.toSet()
+                    ?: emptySet()
         }
 
         fun save(context: Context) {
