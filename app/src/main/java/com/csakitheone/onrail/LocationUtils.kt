@@ -50,12 +50,18 @@ class LocationUtils {
         fun requestPermissions(callback: (Boolean) -> Unit) {
             onPermissionGranted = callback
 
-            locationPermissionRequest?.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+            try {
+                locationPermissionRequest?.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
                 )
-            )
+            }
+            catch (e: Exception) {
+                Log.e("LocationUtils", "Error requesting permissions: ${e.message}")
+                onPermissionGranted(false)
+            }
         }
 
         fun getLastKnownLocation(context: Context, callback: (LatLng) -> Unit) {
