@@ -345,8 +345,9 @@ class TrainActivity : ComponentActivity() {
             initialTrain = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
             train = initialTrain.copy()
 
-            RTDB.listenForOldMessages(
-                trainId = train.trip.tripShortName,
+            RTDB.listenForMessages(
+                chatRoomType = RTDB.ChatRoomType.TRAIN,
+                chatRoomId = train.trip.tripShortName,
                 onMessageAdded = {
                     messages = (messages + it).sortedBy { msg -> msg.timestamp }
 
@@ -395,7 +396,7 @@ class TrainActivity : ComponentActivity() {
             }
 
             onDispose {
-                RTDB.stopListeningForOldMessages()
+                RTDB.stopListeningForMessages()
                 trainTimer.cancel()
             }
         }
@@ -466,6 +467,7 @@ class TrainActivity : ComponentActivity() {
                                         selectedMessage!!.content
                                     )
                                 )
+                                selectedMessage = null
                             }
                         ) {
                             Text("Másolás")

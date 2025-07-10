@@ -151,7 +151,7 @@ class RTDB {
             message: Message,
             callback: (Boolean) -> Unit = {},
         ) {
-            val messagePath = "chats/${chatRoomType.path}/$chatRoomId/${message.timestamp}"
+            val messagePath = "chats/${chatRoomType.path}/$chatRoomId/${message.key}"
 
             ref.child(messagePath).removeValue()
                 .addOnCompleteListener { callback(it.isSuccessful) }
@@ -191,9 +191,9 @@ class RTDB {
                 .addOnCompleteListener { callback(it.isSuccessful) }
         }
 
-        @Deprecated("Chats are moving from trains to chats")
-        fun listenForOldMessages(
-            trainId: String,
+        fun listenForMessages(
+            chatRoomType: ChatRoomType,
+            chatRoomId: String,
             onMessageAdded: (Message) -> Unit,
             onMessageRemoved: (Message) -> Unit = {},
         ) {
@@ -203,7 +203,7 @@ class RTDB {
                     previousChildName: String?
                 ) {
                     snapshot.getValue(Message::class.java)?.let { message ->
-                        onMessageAdded(message)
+                        onMessageAdded(message.copy(key = snapshot.key ?: ""))
                     }
                 }
 
@@ -215,7 +215,7 @@ class RTDB {
 
                 override fun onChildRemoved(snapshot: com.google.firebase.database.DataSnapshot) {
                     snapshot.getValue(Message::class.java)?.let { message ->
-                        onMessageRemoved(message)
+                        onMessageRemoved(message.copy(key = snapshot.key ?: ""))
                     }
                 }
 
@@ -228,12 +228,11 @@ class RTDB {
                 override fun onCancelled(error: DatabaseError) {}
             }
 
-            ref.child("trains/$trainId/messages")
+            ref.child("chats/${chatRoomType.path}/$chatRoomId")
                 .addChildEventListener(messageListener!!)
         }
 
-        @Deprecated("Chats are moving from trains to chats")
-        fun stopListeningForOldMessages() {
+        fun stopListeningForMessages() {
             messageListener?.let {
                 ref.removeEventListener(it)
                 messageListener = null
@@ -254,6 +253,7 @@ class RTDB {
                         roomTypes.children.forEach { room ->
                             room.children.forEach { messageSnapshot ->
                                 val message = messageSnapshot.getValue(Message::class.java)
+                                    ?.copy(key = messageSnapshot.key ?: "")
                                 if (message != null && message.timestamp < oldMessageCutoff) {
                                     ref.child("chats/${roomTypes.key}/${room.key}/${messageSnapshot.key}")
                                         .removeValue()
@@ -281,6 +281,7 @@ class RTDB {
 
                         for (messageSnapshot in messages.children) {
                             val message = messageSnapshot.getValue(Message::class.java)
+                                ?.copy(key = messageSnapshot.key ?: "")
                             if (message != null && message.timestamp < oldMessageCutoff) {
                                 ref.child("trains/${trainSnapshot.key}/messages/${messageSnapshot.key}")
                                     .removeValue()

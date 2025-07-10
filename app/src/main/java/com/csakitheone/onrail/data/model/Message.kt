@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.graphics.toColorInt
 
 data class Message(
+    val key: String = "",
     val timestamp: Long = 0,
     val senderId: String = "",
     val senderName: String = "",
