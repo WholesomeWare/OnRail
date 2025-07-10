@@ -574,6 +574,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+                            Text(text = "Ez az ábra csak illusztráció. A valós architektúra eltér ettől.")
                         }
                     },
                     confirmButton = {
