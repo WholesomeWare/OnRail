@@ -1,6 +1,9 @@
 package com.csakitheone.onrail.data
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import com.csakitheone.onrail.NetworkUtils
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.sources.EMMA
 import com.csakitheone.onrail.data.sources.RTDB
@@ -28,14 +31,16 @@ class TrainsProvider {
         }
 
         fun getTrains(context: Context, callback: (List<EMMAVehiclePosition>, Long) -> Unit) {
-
             // 1. If relevance is too old, fetch from remote source
             RTDB.getVehiclePositionsRelevance { lastUpdated ->
                 RTDB.getConfigLong(
                     RTDB.CONFIG_KEY_EMMA_API_CALL_COOLDOWN,
                     1000L * 60 * 10, // Default to 10 minutes
                 ) { apiCallCooldown ->
-                    if (lastUpdated < System.currentTimeMillis() - apiCallCooldown) {
+                    val isMyDataOutdated =
+                        lastUpdated < System.currentTimeMillis() - SERVER_UPDATE_INTERVAL
+
+                    if (NetworkUtils.hasInternet(context) && isMyDataOutdated) {
                         EMMA.fetchTrains { trains ->
                             callback(trains, System.currentTimeMillis())
                             RTDB.updateVehicleData(trains)

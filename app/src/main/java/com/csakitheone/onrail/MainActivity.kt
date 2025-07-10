@@ -2,6 +2,7 @@ package com.csakitheone.onrail
 
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -176,6 +177,7 @@ class MainActivity : ComponentActivity() {
             val MAP_FILTER_MAVINFORM = "MÁVINFORM"
             val MAP_FILTER_SAVED_TRAINS = "Mentett vonatok"
 
+            var hasInternet by remember { mutableStateOf(NetworkUtils.hasInternet(context)) }
             var motdText by remember { mutableStateOf("") }
             var isMotdCollapsed by rememberSaveable { mutableStateOf(false) }
             var isLoading by remember { mutableStateOf(true) }
@@ -221,10 +223,12 @@ class MainActivity : ComponentActivity() {
             }
 
             DisposableEffect(Unit) {
+                // Launch only
+                // get motd
                 RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
-
-                MAVINFORM.fetchArticles()
-
+                // get news
+                MAVINFORM.fetchArticles(this@MainActivity)
+                // set map to Hungary
                 val latLngHungary = LatLng(47.1625, 19.5033)
                 coroutineScope.launch {
                     mapState.scrollTo(
@@ -234,6 +238,10 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                // Disposables
+                // listen for network changes
+                NetworkUtils.listen(this@MainActivity) { hasInternet = it }
+                // listen for train updates
                 val trainTimer = Timer("trainTimer").apply {
                     schedule(timerTask {
                         isLoading = true
@@ -246,6 +254,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 onDispose {
+                    NetworkUtils.stopListening()
                     trainTimer.cancel()
                 }
             }
@@ -449,6 +458,27 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
+
+            if (!hasInternet) {
+                AlertDialog(
+                    onDismissRequest = {},
+                    title = { Text(text = "Nincs internetkapcsolat") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                startActivity(
+                                    Intent(Settings.ACTION_WIFI_SETTINGS)
+                                )
+                            },
+                        ) {
+                            Text(text = "Beállítások")
+                        }
+                        TextButton(onClick = { finish() }) {
+                            Text(text = "Kilépés")
+                        }
+                    },
+                )
             }
 
             if (isUpdateInfoDialogOpen) {

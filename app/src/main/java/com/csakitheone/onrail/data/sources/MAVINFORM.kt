@@ -1,9 +1,11 @@
 package com.csakitheone.onrail.data.sources
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.csakitheone.onrail.LatLng
+import com.csakitheone.onrail.NetworkUtils
 import com.csakitheone.onrail.data.model.MIArticle
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -57,7 +59,12 @@ class MAVINFORM {
         var articles by mutableStateOf(emptyList<MIArticle>())
             private set
 
-        fun fetchArticles(callback: (List<MIArticle>) -> Unit = {}) {
+        fun fetchArticles(context: Context, callback: (List<MIArticle>) -> Unit = {}) {
+            if (!NetworkUtils.hasInternet(context)) {
+                callback(emptyList())
+                return
+            }
+
             val urls = listOf(mavinformTrainsUrl) + (1..5).map { "$mavinformTrainsUrl&page=$it" }
             val articles = mutableListOf<MIArticle>()
             var remainingCalls = urls.size
