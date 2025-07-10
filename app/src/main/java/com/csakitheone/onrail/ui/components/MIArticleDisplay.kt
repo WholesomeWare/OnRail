@@ -1,15 +1,21 @@
 package com.csakitheone.onrail.ui.components
 
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CloudQueue
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.AlertDialog
@@ -19,6 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,10 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import com.csakitheone.onrail.NetworkUtils
 import com.csakitheone.onrail.data.model.MIArticle
 import com.csakitheone.onrail.data.sources.MAVINFORM
-import java.time.Duration
-import java.time.LocalDateTime
+import com.csakitheone.onrail.data.sources.MAVINFORM.Companion.isCached
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -54,6 +61,7 @@ fun MIArticleDisplay(
     val colorScheme = MaterialTheme.colorScheme
 
     var isDialogOpen by remember { mutableStateOf(false) }
+    var isDownloading by remember { mutableStateOf(false) }
 
     if (isDialogOpen) {
         AlertDialog(
@@ -187,7 +195,7 @@ fun MIArticleDisplay(
         onClick = {
             isDialogOpen = true
             if (article.content.isBlank()) {
-                MAVINFORM.fetchArticleContent(article)
+                MAVINFORM.fetchArticleContent(context, article)
             }
         },
         colors = if (article.isDrastic) CardDefaults.cardColors(
@@ -232,6 +240,43 @@ fun MIArticleDisplay(
                     text = article.readableDateLastUpdated,
                     style = MaterialTheme.typography.bodySmall,
                 )
+                if (isDownloading) {
+                    LoadingIndicator(
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Icon(
+                        modifier = Modifier
+                            .clickable {
+                                if (article.isCached(context)) {
+                                    Toast.makeText(
+                                        context,
+                                        "Ez a cikk már le van töltve.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@clickable
+                                }
+
+                                if (!NetworkUtils.hasInternet(context)) {
+                                    Toast.makeText(
+                                        context,
+                                        "Nincs internetkapcsolat.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@clickable
+                                }
+
+                                isDownloading = true
+                                MAVINFORM.fetchArticleContent(context, article) {
+                                    isDownloading = false
+                                }
+                            },
+                        imageVector = if (article.isCached(context)) Icons.Default.OfflinePin
+                        else Icons.Default.Download,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                    )
+                }
             }
         }
     }

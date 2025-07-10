@@ -229,9 +229,7 @@ class MainActivity : ComponentActivity() {
 
             DisposableEffect(Unit) {
                 // Launch only
-                // get motd
-                RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
-                // get news
+                // fetch MÁVINFORM articles
                 MAVINFORM.fetchArticles(this@MainActivity)
                 // set map to Hungary
                 val latLngHungary = LatLng(47.1625, 19.5033)
@@ -245,9 +243,14 @@ class MainActivity : ComponentActivity() {
 
                 // Disposables
                 // listen for network changes
-                NetworkUtils.listen(this@MainActivity) {
-                    hasInternet = it
-                    if (it) {
+                NetworkUtils.listen(this@MainActivity) { isConnected ->
+                    hasInternet = isConnected
+
+                    if (isConnected) {
+                        RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
+
+                        MAVINFORM.fetchArticles(this@MainActivity)
+
                         TrainsProvider.getTrains(this@MainActivity) { newTrains, lastUpdated ->
                             trains = newTrains
                             trainsLastUpdated = lastUpdated
@@ -263,7 +266,7 @@ class MainActivity : ComponentActivity() {
                             trainsLastUpdated = lastUpdated
                             isLoading = false
                         }
-                    }, 10 * 1000L, TrainsProvider.SERVER_UPDATE_INTERVAL)
+                    }, 1000L, TrainsProvider.SERVER_UPDATE_INTERVAL)
                 }
 
                 onDispose {

@@ -1,6 +1,7 @@
 package com.csakitheone.onrail.data.sources
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -11,6 +12,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.io.File
 import java.net.URL
 
 class MAVINFORM {
@@ -59,9 +61,37 @@ class MAVINFORM {
         var articles by mutableStateOf(emptyList<MIArticle>())
             private set
 
+        fun MIArticle.isCached(context: Context): Boolean {
+            val cacheFile = File(context.cacheDir, "mavinform/${this.title}.html")
+            if (!cacheFile.exists()) {
+                return false
+            }
+            return try {
+                val content = cacheFile.readText()
+                MIArticle.fromHtml(content).content.isNotBlank()
+            } catch (e: Exception) {
+                Log.e("MAVINFORM", "Error reading cached article: ${e.message}")
+                false
+            }
+        }
+
         fun fetchArticles(context: Context, callback: (List<MIArticle>) -> Unit = {}) {
             if (!NetworkUtils.hasInternet(context)) {
-                callback(emptyList())
+                Log.d("MAVINFORM", "No internet connection, loading cached articles.")
+                val cachedArticlesDir = File(context.cacheDir, "mavinform")
+                if (!cachedArticlesDir.exists()) {
+                    callback(emptyList())
+                    return
+                }
+                val cachedArticles = cachedArticlesDir.listFiles()?.mapNotNull { file ->
+                    if (file.extension == "html") {
+                        MIArticle.fromHtml(file.readText())
+                    } else {
+                        null
+                    }
+                } ?: emptyList()
+                articles = cachedArticles.sortedByDescending { it.dateValidFrom }
+                callback(cachedArticles.sortedByDescending { it.dateValidFrom })
                 return
             }
 
@@ -72,6 +102,15 @@ class MAVINFORM {
             urls.forEach { url ->
                 fetchArticlesFromUrl(url) { newArticles ->
                     articles += newArticles
+
+                    newArticles.forEach { article ->
+                        val cacheFile = File(context.cacheDir, "mavinform/${article.title}.html")
+                        cacheFile.parentFile?.mkdirs()
+                        GlobalScope.launch {
+                            cacheFile.writeText(article.toString())
+                        }
+                    }
+
                     remainingCalls--
                     if (remainingCalls == 0) {
                         this.articles = articles.sortedByDescending { it.dateValidFrom }
@@ -82,9 +121,14 @@ class MAVINFORM {
         }
 
         fun fetchArticleContent(
+            context: Context,
             article: MIArticle,
             callback: (String) -> Unit = {},
         ) {
+            if (!NetworkUtils.hasInternet(context)) {
+                return
+            }
+
             GlobalScope.launch(Dispatchers.IO) {
                 val html = URL("$baseUrl${article.link}").openConnection().inputStream.bufferedReader().readText()
                 val htmlContent = html.substringAfter("<div class=\"field-body\">")
@@ -93,6 +137,9 @@ class MAVINFORM {
 
                 articles = articles.map {
                     if (it.link == article.link) {
+                        val cacheFile = File(context.cacheDir, "mavinform/${it.title}.html")
+                        cacheFile.parentFile?.mkdirs()
+                        cacheFile.writeText(it.copy(content = htmlContent).toString())
                         it.copy(content = htmlContent)
                     } else {
                         it

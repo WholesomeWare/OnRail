@@ -58,4 +58,56 @@ data class MIArticle(
             }
             return "most"
         }
+
+    /**
+     * Returns an html representation of the article.
+     */
+    override fun toString(): String {
+        return """
+            <div id="mi-article-metadata" style="display: none;">
+                <h2 class="mi-article-title">$title</h2>
+                <a class="mi-article-link" href="$link">Link</a>
+                <p class="mi-article-date-valid-from">$dateValidFrom</p>
+                <p class="mi-article-date-last-updated">$dateLastUpdated</p>
+                <p class="mi-article-scopes">${scopes.joinToString(", ")}</p>
+                <p class="mi-article-is-drastic">${if (isDrastic) "Rendkívüli változás" else "Normál változás"}</p>
+            </div>
+            <!-- Article content begins -->
+            $content
+        """.trimIndent()
+    }
+
+    companion object {
+        fun fromHtml(html: String): MIArticle {
+            val (metadataHtml, contentHtml) = html.split(
+                "<!-- Article content begins -->",
+                limit = 2
+            )
+            val title = metadataHtml.substringAfter("class=\"mi-article-title\">")
+                .substringBefore("</")
+            val link = metadataHtml.substringAfter("class=\"mi-article-link\" href=\"")
+                .substringBefore("\">")
+            val dateValidFrom = metadataHtml.substringAfter("class=\"mi-article-date-valid-from\">")
+                .substringBefore("</")
+            val dateLastUpdated =
+                metadataHtml.substringAfter("class=\"mi-article-date-last-updated\">")
+                    .substringBefore("</")
+            val scopes = metadataHtml.substringAfter("class=\"mi-article-scopes\">")
+                .substringBefore("</")
+                .split(",")
+                .map { it.trim() }
+            val isDrastic = metadataHtml.contains("Rendkívüli")
+            val content = contentHtml.trim()
+
+            return MIArticle(
+                title = title,
+                link = link,
+                dateValidFrom = dateValidFrom,
+                dateLastUpdated = dateLastUpdated,
+                scopes = scopes,
+                isDrastic = isDrastic,
+                content = content
+            )
+        }
+    }
 }
