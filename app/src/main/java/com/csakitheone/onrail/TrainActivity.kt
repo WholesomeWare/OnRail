@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -38,6 +39,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Bookmark
@@ -93,6 +95,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -119,6 +122,8 @@ import ovh.plrapps.mapcompose.api.scrollTo
 import ovh.plrapps.mapcompose.ui.MapUI
 import java.util.Timer
 import kotlin.concurrent.timerTask
+import kotlin.math.cos
+import kotlin.math.sin
 
 class TrainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -232,18 +237,34 @@ class TrainActivity : ComponentActivity() {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        FilledIconButton(
-                            onClick = {
-                                isTrainInfoDialogOpen = true
-                            },
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = train.delayColor,
-                            ),
+                        Box(
+                            contentAlignment = Alignment.Center,
                         ) {
+                            FilledIconButton(
+                                onClick = {
+                                    isTrainInfoDialogOpen = true
+                                },
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = train.delayColor,
+                                ),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Train,
+                                    contentDescription = "Train position",
+                                    tint = Color.Black.copy(alpha = .6f),
+                                )
+                            }
                             Icon(
-                                imageVector = Icons.Default.Train,
-                                contentDescription = "Train position",
-                                tint = Color.Black.copy(alpha = .6f),
+                                modifier = Modifier
+                                    .offset(
+                                        x = (sin(Math.PI * train.heading / 180) * 22).dp,
+                                        y = (-cos(Math.PI * train.heading / 180) * 22).dp,
+                                    )
+                                    .clip(CircleShape)
+                                    .background(train.delayColor)
+                                    .rotate(train.heading.toFloat() - 90f),
+                                imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
+                                contentDescription = null,
                             )
                         }
                         Badge {
@@ -924,7 +945,8 @@ class TrainActivity : ComponentActivity() {
                                     AnimatedContent(train) {
                                         Text(
                                             modifier = Modifier.padding(horizontal = 8.dp),
-                                            text = "Késés: ${it.delayMinutes} perc",
+                                            text = "Végállomás: ${it.trip.tripHeadsign}\n" +
+                                                    "Késés: ${it.delayMinutes} perc",
                                         )
                                     }
                                 } else {

@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -41,6 +42,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Clear
@@ -99,6 +101,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -138,6 +141,8 @@ import ovh.plrapps.mapcompose.ui.layout.Fill
 import ovh.plrapps.mapcompose.ui.state.markers.model.RenderingStrategy
 import java.util.Timer
 import kotlin.concurrent.timerTask
+import kotlin.math.cos
+import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -320,17 +325,33 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                FilledIconButton(
-                                    onClick = {},
-                                    interactionSource = interactionSource,
-                                    colors = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = train.delayColor,
-                                    ),
+                                Box(
+                                    contentAlignment = Alignment.Center,
                                 ) {
+                                    FilledIconButton(
+                                        onClick = {},
+                                        interactionSource = interactionSource,
+                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                            containerColor = train.delayColor,
+                                        ),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Train,
+                                            contentDescription = null,
+                                            tint = Color.Black.copy(alpha = .6f),
+                                        )
+                                    }
                                     Icon(
-                                        imageVector = Icons.Default.Train,
+                                        modifier = Modifier
+                                            .offset(
+                                                x = (sin(Math.PI * train.heading / 180) * 22).dp,
+                                                y = (-cos(Math.PI * train.heading / 180) * 22).dp,
+                                            )
+                                            .clip(CircleShape)
+                                            .background(train.delayColor)
+                                            .rotate(train.heading.toFloat() - 90f),
+                                        imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
                                         contentDescription = null,
-                                        tint = Color.Black.copy(alpha = .6f),
                                     )
                                 }
                                 Badge {
