@@ -245,7 +245,15 @@ class MainActivity : ComponentActivity() {
 
                 // Disposables
                 // listen for network changes
-                NetworkUtils.listen(this@MainActivity) { hasInternet = it }
+                NetworkUtils.listen(this@MainActivity) {
+                    hasInternet = it
+                    if (it) {
+                        TrainsProvider.getTrains(this@MainActivity) { newTrains, lastUpdated ->
+                            trains = newTrains
+                            trainsLastUpdated = lastUpdated
+                        }
+                    }
+                }
                 // listen for train updates
                 val trainTimer = Timer("trainTimer").apply {
                     schedule(timerTask {
@@ -255,7 +263,7 @@ class MainActivity : ComponentActivity() {
                             trainsLastUpdated = lastUpdated
                             isLoading = false
                         }
-                    }, 0L, TrainsProvider.SERVER_UPDATE_INTERVAL)
+                    }, 10 * 1000L, TrainsProvider.SERVER_UPDATE_INTERVAL)
                 }
 
                 onDispose {

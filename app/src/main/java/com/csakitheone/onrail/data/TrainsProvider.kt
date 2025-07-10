@@ -32,6 +32,8 @@ class TrainsProvider {
         }
 
         fun getTrains(context: Context, callback: (List<EMMAVehiclePosition>, Long) -> Unit) {
+            Log.d("TrainsProvider", "Fetching trains...")
+
             val localCacheFile = File(context.cacheDir, "trains_cache.json")
 
             // 0. If there is no internet connection, use local cache
