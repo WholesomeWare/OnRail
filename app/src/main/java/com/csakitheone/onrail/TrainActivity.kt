@@ -560,7 +560,9 @@ class TrainActivity : ComponentActivity() {
                     HorizontalDivider()
 
                     FlowRow(
-                        modifier = Modifier.padding(8.dp),
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .verticalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {

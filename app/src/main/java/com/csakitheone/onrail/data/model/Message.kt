@@ -50,13 +50,11 @@ data class Message(
             messageType = TYPE_LOCATION_PING,
             content = "Hely küldése üzenet nélkül",
         )
-        val REPORT_TEMPERATURE_HIGH = report(
-            content = "Nincs légkondi / meleg van",
-            color = COLOR_WARNING,
+        val REPORT_SEAT_TICKET = report(
+            content = "helyjeggyel utazom",
         )
-        val REPORT_TEMPERATURE_LOW = report(
-            content = "Nincs fűtés / hideg van",
-            color = COLOR_WARNING,
+        val REPORT_REPLACEMENT_BUS = report(
+            content = "Pótlóbusz",
         )
         val REPORT_OPTION_DELAY_MINOR = report(
             content = "Kis késés (5-15 perc)",
@@ -68,6 +66,14 @@ data class Message(
         )
         val REPORT_OPTION_DELAY_MAJOR = report(
             content = "Nagy késés (1 óra+)",
+        )
+        val REPORT_TEMPERATURE_HIGH = report(
+            content = "Nincs légkondi / meleg van",
+            color = COLOR_WARNING,
+        )
+        val REPORT_TEMPERATURE_LOW = report(
+            content = "Nincs fűtés / hideg van",
+            color = COLOR_WARNING,
         )
         val REPORT_TRAIN_STOPPED = report(
             content = "Vonat megállt",
@@ -92,11 +98,13 @@ data class Message(
 
         val reportOptions = listOf(
             LOCATION_PING,
-            REPORT_TEMPERATURE_HIGH,
-            REPORT_TEMPERATURE_LOW,
+            REPORT_SEAT_TICKET,
+            REPORT_REPLACEMENT_BUS,
             REPORT_OPTION_DELAY_MINOR,
             REPORT_OPTION_DELAY_MODERATE,
             REPORT_OPTION_DELAY_MAJOR,
+            REPORT_TEMPERATURE_HIGH,
+            REPORT_TEMPERATURE_LOW,
             REPORT_TRAIN_STOPPED,
             REPORT_TRACK_BLOCKED,
             REPORT_TECHNICAL_ISSUE,
