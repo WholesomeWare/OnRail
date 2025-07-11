@@ -119,6 +119,12 @@ class TerritoryActivity : ComponentActivity() {
                 ) ?: MAVINFORM.Territory.BUDAPEST
             }
 
+            LaunchedEffect(selectedTab, messages) {
+                if (messages.isNotEmpty() && chatListState.layoutInfo.totalItemsCount > 0) {
+                    chatListState.scrollToItem(chatListState.layoutInfo.totalItemsCount - 1)
+                }
+            }
+
             DisposableEffect(territory) {
                 RTDB.listenForMessages(
                     chatRoomType = RTDB.ChatRoomType.TERRITORY,

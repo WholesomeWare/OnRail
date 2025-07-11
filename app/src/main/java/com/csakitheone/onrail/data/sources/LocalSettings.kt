@@ -37,7 +37,11 @@ class LocalSettings {
                     key to value
                 }
             savedTrainTripNames =
-                settings["savedTrainTripNames"]?.split(",")?.map { it.trim() }?.toSet()
+                settings["savedTrainTripNames"]
+                    ?.split(",")
+                    ?.map { it.trim() }
+                    ?.filter { it.isNotEmpty() }
+                    ?.toSet()
                     ?: emptySet()
         }
 

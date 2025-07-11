@@ -11,6 +11,7 @@ import com.csakitheone.onrail.data.model.MIArticle
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.net.URL
@@ -99,7 +100,7 @@ class MAVINFORM {
                         val cacheFile = File(context.cacheDir, "mavinform/${article.title}.html")
                         cacheFile.parentFile?.mkdirs()
                         GlobalScope.launch {
-                            Thread.sleep(index * 100L)
+                            delay( index * 100L)
                             cacheFile.writeText(article.toString())
                         }
                     }

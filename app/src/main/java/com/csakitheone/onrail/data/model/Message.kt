@@ -2,7 +2,9 @@ package com.csakitheone.onrail.data.model
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.filled.AirlineSeatReclineNormal
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.BusAlert
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.ElectricBolt
 import androidx.compose.material.icons.filled.Emergency
@@ -51,7 +53,7 @@ data class Message(
             content = "Hely küldése üzenet nélkül",
         )
         val REPORT_SEAT_TICKET = report(
-            content = "helyjeggyel utazom",
+            content = "Helyjeggyel utazom",
         )
         val REPORT_REPLACEMENT_BUS = report(
             content = "Pótlóbusz",
@@ -117,6 +119,10 @@ data class Message(
             return when (message.messageType) {
                 TYPE_REPORT -> {
                     when (message.content) {
+                        REPORT_SEAT_TICKET.content -> Icons.Default.AirlineSeatReclineNormal
+
+                        REPORT_REPLACEMENT_BUS.content -> Icons.Default.BusAlert
+
                         REPORT_OPTION_DELAY_MINOR.content,
                         REPORT_OPTION_DELAY_MODERATE.content,
                         REPORT_OPTION_DELAY_MAJOR.content -> Icons.Default.Schedule
@@ -132,7 +138,6 @@ data class Message(
                         REPORT_CROWDING.content -> Icons.Default.People
 
                         REPORT_TEMPERATURE_HIGH.content -> Icons.Default.LocalFireDepartment
-
                         REPORT_TEMPERATURE_LOW.content -> Icons.Default.SevereCold
 
                         REPORT_POLICE_ACTIVITY.content -> Icons.Default.LocalPolice

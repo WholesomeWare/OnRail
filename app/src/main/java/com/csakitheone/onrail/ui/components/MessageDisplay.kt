@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Report
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -73,6 +74,18 @@ fun MessageDisplay(
                 Card(
                     onClick = { onClick(message) },
                     shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (message.senderId == Auth.currentUser?.uid) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        contentColor = if (message.senderId == Auth.currentUser?.uid) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    ),
                 ) {
                     Text(
                         modifier = Modifier.padding(8.dp),

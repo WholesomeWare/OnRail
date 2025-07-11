@@ -70,16 +70,23 @@ class EMMA {
                     return@launch
                 }
 
-                val responseBody = response.body?.string() ?: return@launch
-                val jsonResponse = JSONObject(responseBody)
-                val vehiclesArray =
-                    jsonResponse.getJSONObject("data").getJSONArray("vehiclePositions")
-                val vehicles = (0 until vehiclesArray.length()).map { index ->
-                    val vehicleJson = vehiclesArray.getJSONObject(index)
-                    EMMAVehiclePosition.fromJson(vehicleJson.toString())
-                }.sortedBy { it.trip.tripShortName }
+                try {
+                    val responseBody = response.body?.string() ?: return@launch
+                    val jsonResponse = JSONObject(responseBody)
+                    val vehiclesArray =
+                        jsonResponse.getJSONObject("data").getJSONArray("vehiclePositions")
+                    val vehicles = (0 until vehiclesArray.length()).map { index ->
+                        val vehicleJson = vehiclesArray.getJSONObject(index)
+                        EMMAVehiclePosition.fromJson(vehicleJson.toString())
+                    }.sortedBy { it.trip.tripShortName }
 
-                callback(vehicles)
+                    callback(vehicles)
+                }
+                catch (e: Exception) {
+                    e.printStackTrace()
+                    callback(emptyList())
+                    return@launch
+                }
             }
         }
 

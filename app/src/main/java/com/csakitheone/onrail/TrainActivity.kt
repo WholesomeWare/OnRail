@@ -115,6 +115,7 @@ import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.fadingEdge
 import com.csakitheone.onrail.ui.theme.OnRailTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ovh.plrapps.mapcompose.api.addMarker
 import ovh.plrapps.mapcompose.api.removeAllMarkers
@@ -277,33 +278,36 @@ class TrainActivity : ComponentActivity() {
             messages
                 .filter { it.location.isNotBlank() }
                 .sortedByDescending { it.timestamp }
-                .take(20)
+                .take(30)
                 .forEachIndexed { index, msg ->
                     val latLng = LatLng.fromString(msg.location)
                     val time = DateFormat.format("HH:mm", msg.timestamp)
-                    val alpha = 1f / (index + 2) * 2
-                    mapState.addMarker(
-                        id = "${msg.senderId}-${msg.timestamp}",
-                        x = latLng.normalized.longitude,
-                        y = latLng.normalized.latitude,
-                        relativeOffset = Offset(-.5f, -.5f),
-                    ) {
-                        Column(
-                            modifier = Modifier.alpha(alpha),
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                    val alpha = 1f / (index + 1) * 3f
+                    coroutineScope.launch {
+                        delay(index * 100L)
+                        mapState.addMarker(
+                            id = "${msg.senderId}-${msg.timestamp}",
+                            x = latLng.normalized.longitude,
+                            y = latLng.normalized.latitude,
+                            relativeOffset = Offset(-.5f, -.5f),
                         ) {
-                            FilledIconButton(
-                                onClick = {
-                                    selectedMessage = msg
-                                },
+                            Column(
+                                modifier = Modifier.alpha(alpha),
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Icon(
-                                    imageVector = Message.getImageVector(msg),
-                                    contentDescription = null,
-                                )
-                            }
-                            Badge {
-                                Text(text = "${time}")
+                                FilledIconButton(
+                                    onClick = {
+                                        selectedMessage = msg
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Message.getImageVector(msg),
+                                        contentDescription = null,
+                                    )
+                                }
+                                Badge {
+                                    Text(text = "${time}")
+                                }
                             }
                         }
                     }
@@ -335,9 +339,9 @@ class TrainActivity : ComponentActivity() {
             )
         }
 
-        LaunchedEffect(readableMessages) {
-            if (readableMessages.isNotEmpty()) {
-                chatListState.animateScrollToItem(readableMessages.lastIndex)
+        LaunchedEffect(selectedTab, readableMessages) {
+            if (readableMessages.isNotEmpty() && chatListState.layoutInfo.totalItemsCount > 0) {
+                chatListState.scrollToItem(chatListState.layoutInfo.totalItemsCount - 1)
             }
         }
 
@@ -378,7 +382,7 @@ class TrainActivity : ComponentActivity() {
                 },
                 onMessageRemoved = {
                     messages =
-                        messages.filter { msg -> msg.timestamp != it.timestamp }
+                        messages.filter { msg -> msg.key != it.key }
                 },
             )
 
@@ -824,9 +828,7 @@ class TrainActivity : ComponentActivity() {
                     Column(
                         modifier = Modifier.weight(1f),
                     ) {
-                        AnimatedVisibility(
-                            visible = selectedTab != TAB_MAP
-                        ) {
+                        if (selectedTab != TAB_MAP) {
                             LazyColumn(
                                 modifier = Modifier
                                     .fadingEdge(

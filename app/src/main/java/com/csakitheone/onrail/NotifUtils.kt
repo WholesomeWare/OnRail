@@ -91,7 +91,7 @@ class NotifUtils {
                     .setIntent(bubbleIntent)
                     .setIcon(Icon.createWithResource(context, R.drawable.ic_train_24px))
                     .setDesiredHeight(720)
-                    .setAutoExpandBubble(true)
+                    .setAutoExpandBubble(chatMessage.isBlank())
                     .build()
             }
 
@@ -165,7 +165,7 @@ class NotifUtils {
                     .setIntent(bubbleIntent)
                     .setIcon(Icon.createWithResource(context, R.drawable.ic_train_24px))
                     .setDesiredHeight(720)
-                    .setAutoExpandBubble(true)
+                    .setAutoExpandBubble(chatMessage.isBlank())
                     .build()
             }
 
