@@ -188,7 +188,6 @@ class TrainActivity : ComponentActivity() {
         var isSendingMessage by remember { mutableStateOf(false) }
         var isLocationSendingDialogOpen by rememberSaveable { mutableStateOf(false) }
         var isAddReportMenuOpen by rememberSaveable { mutableStateOf(false) }
-        var selectedMessage by remember { mutableStateOf<Message?>(null) }
 
         LaunchedEffect(train, messages, selectedTab, LocationUtils.current) {
             val latestMessage = messages
@@ -291,24 +290,20 @@ class TrainActivity : ComponentActivity() {
                             y = latLng.normalized.latitude,
                             relativeOffset = Offset(-.5f, -.5f),
                         ) {
-                            Column(
+                            MessageDisplay(
                                 modifier = Modifier.alpha(alpha),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                FilledIconButton(
-                                    onClick = {
-                                        selectedMessage = msg
-                                    },
-                                ) {
-                                    Icon(
-                                        imageVector = Message.getImageVector(msg),
-                                        contentDescription = null,
-                                    )
-                                }
-                                Badge {
-                                    Text(text = "${time}")
-                                }
-                            }
+                                message = msg,
+                                isMarker = true,
+                                onRemoveRequest = {
+                                    if (Auth.currentUser?.uid == msg.senderId) {
+                                        RTDB.removeMessage(
+                                            chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                            chatRoomId = train.trip.tripShortName,
+                                            message = it,
+                                        )
+                                    }
+                                },
+                            )
                         }
                     }
                 }
@@ -430,53 +425,6 @@ class TrainActivity : ComponentActivity() {
                     },
                     confirmButton = {
                         TextButton(onClick = { isTrainInfoDialogOpen = false }) {
-                            Text("Bezárás")
-                        }
-                    },
-                )
-            }
-
-            if (selectedMessage != null) {
-                AlertDialog(
-                    onDismissRequest = { selectedMessage = null },
-                    title = { Text(text = "Üzenet részletei") },
-                    text = {
-                        MessageDisplay(
-                            modifier = Modifier.fillMaxWidth(),
-                            message = selectedMessage!!,
-                        )
-                    },
-                    confirmButton = {
-                        if (Auth.currentUser != null && selectedMessage?.senderId == Auth.currentUser?.uid) {
-                            TextButton(
-                                onClick = {
-                                    RTDB.removeMessage(
-                                        chatRoomType = RTDB.ChatRoomType.TRAIN,
-                                        chatRoomId = train.trip.tripShortName,
-                                        message = selectedMessage!!
-                                    )
-                                    selectedMessage = null
-                                }
-                            ) {
-                                Text("Törlés")
-                            }
-                        }
-                        TextButton(
-                            onClick = {
-                                val clipboardManager =
-                                    getSystemService(ClipboardManager::class.java)
-                                clipboardManager.setPrimaryClip(
-                                    ClipData.newPlainText(
-                                        "Üzenet másolása",
-                                        selectedMessage!!.content
-                                    )
-                                )
-                                selectedMessage = null
-                            }
-                        ) {
-                            Text("Másolás")
-                        }
-                        TextButton(onClick = { selectedMessage = null }) {
                             Text("Bezárás")
                         }
                     },
@@ -860,7 +808,15 @@ class TrainActivity : ComponentActivity() {
                                     MessageDisplay(
                                         modifier = Modifier.fillMaxWidth(),
                                         message = message,
-                                        onClick = { selectedMessage = it },
+                                        onRemoveRequest = {
+                                            if (Auth.currentUser?.uid == message.senderId) {
+                                                RTDB.removeMessage(
+                                                    chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                                    chatRoomId = train.trip.tripShortName,
+                                                    message = it,
+                                                )
+                                            }
+                                        },
                                     )
                                 }
                             }

@@ -110,7 +110,6 @@ class TerritoryActivity : ComponentActivity() {
                 }
             }
             var messages by remember { mutableStateOf(listOf<Message>()) }
-            var selectedMessage by remember { mutableStateOf<Message?>(null) }
             var messageText by remember { mutableStateOf("") }
 
             LaunchedEffect(Unit) {
@@ -158,53 +157,6 @@ class TerritoryActivity : ComponentActivity() {
                 onDispose {
                     RTDB.stopListeningForMessages()
                 }
-            }
-
-            if (selectedMessage != null) {
-                AlertDialog(
-                    onDismissRequest = { selectedMessage = null },
-                    title = { Text(text = "Üzenet részletei") },
-                    text = {
-                        MessageDisplay(
-                            modifier = Modifier.fillMaxWidth(),
-                            message = selectedMessage!!,
-                        )
-                    },
-                    confirmButton = {
-                        if (Auth.currentUser != null && selectedMessage?.senderId == Auth.currentUser?.uid) {
-                            TextButton(
-                                onClick = {
-                                    RTDB.removeMessage(
-                                        chatRoomType = RTDB.ChatRoomType.TERRITORY,
-                                        chatRoomId = territory.displayName,
-                                        message = selectedMessage!!
-                                    )
-                                    selectedMessage = null
-                                }
-                            ) {
-                                Text("Törlés")
-                            }
-                        }
-                        TextButton(
-                            onClick = {
-                                val clipboardManager =
-                                    getSystemService(ClipboardManager::class.java)
-                                clipboardManager.setPrimaryClip(
-                                    ClipData.newPlainText(
-                                        "Üzenet másolása",
-                                        selectedMessage!!.content
-                                    )
-                                )
-                                selectedMessage = null
-                            }
-                        ) {
-                            Text("Másolás")
-                        }
-                        TextButton(onClick = { selectedMessage = null }) {
-                            Text("Bezárás")
-                        }
-                    },
-                )
             }
 
             Surface(
@@ -405,7 +357,15 @@ class TerritoryActivity : ComponentActivity() {
                                     MessageDisplay(
                                         modifier = Modifier.fillMaxWidth(),
                                         message = message,
-                                        onClick = { selectedMessage = it },
+                                        onRemoveRequest = {
+                                            if (Auth.currentUser?.uid == message.senderId) {
+                                                RTDB.removeMessage(
+                                                    chatRoomType = RTDB.ChatRoomType.TERRITORY,
+                                                    chatRoomId = territory.displayName,
+                                                    message = it,
+                                                )
+                                            }
+                                        },
                                     )
                                 }
                             }
