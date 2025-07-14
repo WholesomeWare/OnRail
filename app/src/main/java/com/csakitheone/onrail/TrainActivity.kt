@@ -353,7 +353,7 @@ class TrainActivity : ComponentActivity() {
                 chatRoomId = train.trip.tripShortName,
                 onMessageAdded = {
                     isLoadingChat = false
-                    
+
                     messages = (messages + it).sortedBy { msg -> msg.timestamp }
 
                     if (intent.getBooleanExtra(
