@@ -41,6 +41,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Check
@@ -657,6 +658,26 @@ class TrainActivity : ComponentActivity() {
                                         style = MaterialTheme.typography.labelMedium,
                                     )
                                 }
+                                IconButton(
+                                    onClick = {
+                                        if (LocalSettings.savedTrainTripNames
+                                                .contains(train.trip.tripShortName)
+                                        ) {
+                                            LocalSettings.savedTrainTripNames -= train.trip.tripShortName
+                                        } else {
+                                            LocalSettings.savedTrainTripNames += train.trip.tripShortName
+                                        }
+                                        LocalSettings.save(this@TrainActivity)
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = if (LocalSettings.savedTrainTripNames
+                                                .contains(train.trip.tripShortName)
+                                        ) Icons.Default.Bookmark
+                                        else Icons.Default.BookmarkBorder,
+                                        contentDescription = "Save train",
+                                    )
+                                }
                             }
                         }
                         ProfileIcon(
@@ -672,7 +693,7 @@ class TrainActivity : ComponentActivity() {
                                         },
                                         text = {
                                             Column {
-                                                Text(text = "Buborékba helyezés")
+                                                Text(text = "Vonat buborékba helyezése")
                                                 Text(
                                                     text = "Csak kompatibilis eszközökön és megfelelő beállításokkal",
                                                     style = MaterialTheme.typography.labelSmall,
@@ -687,37 +708,6 @@ class TrainActivity : ComponentActivity() {
                                         },
                                     )
                                 }
-
-                                DropdownMenuItem(
-                                    onClick = {
-                                        if (LocalSettings.savedTrainTripNames
-                                                .contains(train.trip.tripShortName)
-                                        ) {
-                                            LocalSettings.savedTrainTripNames -= train.trip.tripShortName
-                                        } else {
-                                            LocalSettings.savedTrainTripNames += train.trip.tripShortName
-                                        }
-                                        LocalSettings.save(this@TrainActivity)
-                                        dismiss()
-                                    },
-                                    text = {
-                                        Text(
-                                            text = if (LocalSettings.savedTrainTripNames
-                                                    .contains(train.trip.tripShortName)
-                                            ) {
-                                                "Eltávolítás a mentettek közül"
-                                            } else {
-                                                "Hozzáadás a mentettekhez"
-                                            }
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Bookmark,
-                                            contentDescription = null
-                                        )
-                                    },
-                                )
                             },
                         )
                     }
