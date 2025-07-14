@@ -1,7 +1,5 @@
 package com.csakitheone.onrail
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
 import android.text.format.DateFormat
@@ -152,12 +150,13 @@ class TrainActivity : ComponentActivity() {
         val chatListState = rememberLazyListState()
         val mapState = remember { LocationUtils.getMapState(context) }
 
-        var isLoading by remember { mutableStateOf(false) }
+        var isLoadingTrain by remember { mutableStateOf(false) }
+        var isLoadingChat by remember { mutableStateOf(false) }
         var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
         var initialTrain by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
         var train by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
         var trainsLastUpdated by rememberSaveable { mutableLongStateOf(0L) }
-        val trainsLastUpdatedText by remember(trainsLastUpdated, isLoading) {
+        val trainsLastUpdatedText by remember(trainsLastUpdated, isLoadingTrain) {
             derivedStateOf {
                 if (trainsLastUpdated == 0L) {
                     "Nincs adat"
@@ -344,6 +343,11 @@ class TrainActivity : ComponentActivity() {
             initialTrain = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
             train = initialTrain.copy()
 
+            isLoadingChat = true
+            RTDB.getChatRelevances {
+                isLoadingChat = false
+            }
+
             RTDB.listenForMessages(
                 chatRoomType = RTDB.ChatRoomType.TRAIN,
                 chatRoomId = train.trip.tripShortName,
@@ -383,13 +387,13 @@ class TrainActivity : ComponentActivity() {
 
             val trainTimer = Timer("trainTimer").apply {
                 schedule(timerTask {
-                    isLoading = true
+                    isLoadingTrain = true
                     TrainsProvider.getTrains(this@TrainActivity) { newTrains, lastUpdated ->
                         train = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
                             ?: initialTrain.copy(lat = 0.0, lon = 0.0)
 
                         trainsLastUpdated = lastUpdated
-                        isLoading = false
+                        isLoadingTrain = false
                     }
                 }, 0L, TrainsProvider.SERVER_UPDATE_INTERVAL)
             }
@@ -520,7 +524,7 @@ class TrainActivity : ComponentActivity() {
                     ) {
                         Message.reportOptions.forEach { reportOption ->
                             NavigationBarItem(
-                                enabled = isSendingLocationEnabled,
+                                enabled = !isLoadingChat && !isSendingMessage && isSendingLocationEnabled,
                                 selected = false,
                                 onClick = {
                                     isSendingMessage = true
@@ -916,11 +920,12 @@ class TrainActivity : ComponentActivity() {
                                         modifier = Modifier
                                             .weight(1f)
                                             .clip(MaterialTheme.shapes.extraLarge),
+                                        enabled = !isLoadingChat,
                                         value = messageText,
                                         onValueChange = { messageText = it.take(500) },
                                         leadingIcon = {
                                             IconButton(
-                                                enabled = !isSendingMessage,
+                                                enabled = !isLoadingChat && !isSendingMessage,
                                                 onClick = { isAddReportMenuOpen = true },
                                             ) {
                                                 Icon(
@@ -931,7 +936,7 @@ class TrainActivity : ComponentActivity() {
                                         },
                                     )
                                     Button(
-                                        enabled = !isSendingMessage,
+                                        enabled = !isLoadingChat && !isSendingMessage,
                                         onClick = {
                                             isSendingMessage = true
                                             selectedTab = TAB_CHAT

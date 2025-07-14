@@ -101,6 +101,7 @@ class TerritoryActivity : ComponentActivity() {
             val TAB_CHAT = 1
 
             var territory by remember { mutableStateOf(MAVINFORM.Territory.BUDAPEST) }
+            var isLoadingChat by remember { mutableStateOf(false) }
             var selectedTab by remember { mutableIntStateOf(TAB_ARTICLES) }
             val mavinformArticles by remember {
                 derivedStateOf {
@@ -125,6 +126,11 @@ class TerritoryActivity : ComponentActivity() {
             }
 
             DisposableEffect(territory) {
+                isLoadingChat = true
+                RTDB.getChatRelevances {
+                    isLoadingChat = false
+                }
+
                 RTDB.listenForMessages(
                     chatRoomType = RTDB.ChatRoomType.TERRITORY,
                     chatRoomId = territory.displayName,
@@ -388,10 +394,12 @@ class TerritoryActivity : ComponentActivity() {
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clip(MaterialTheme.shapes.extraLarge),
+                                            enabled = !isLoadingChat,
                                             value = messageText,
                                             onValueChange = { messageText = it.take(500) },
                                         )
                                         Button(
+                                            enabled = !isLoadingChat,
                                             onClick = {
                                                 if (messageText.isBlank()) {
                                                     return@Button
