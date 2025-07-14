@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.text.format.DateFormat
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,6 +55,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SignalCellularOff
@@ -182,7 +182,8 @@ class MainActivity : ComponentActivity() {
             var isMotdCollapsed by rememberSaveable { mutableStateOf(false) }
             var chatRoomRelevances by remember { mutableStateOf(emptyMap<RTDB.ChatRoomType, Map<String, Long>>()) }
             var activeFilterDurationMillis by rememberSaveable { mutableLongStateOf(0L) }
-            var isLoading by remember { mutableStateOf(true) }
+            var isLoadingTrains by remember { mutableStateOf(false) }
+            var isLoadingNews by remember { mutableStateOf(false) }
             var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
             var trainsLastUpdated by remember { mutableLongStateOf(0L) }
 
@@ -196,9 +197,9 @@ class MainActivity : ComponentActivity() {
             var showMarkerBadges by remember { mutableStateOf(true) }
             var isLoadingLocation by remember { mutableStateOf(false) }
 
-            val trainsLastUpdatedText by remember(isLoading, trainsLastUpdated) {
+            val trainsLastUpdatedText by remember(isLoadingTrains, trainsLastUpdated) {
                 derivedStateOf {
-                    if (isLoading) {
+                    if (isLoadingTrains) {
                         "Frissítés..."
                     } else if (trainsLastUpdated == 0L) {
                         "Nincs adat"
@@ -265,22 +266,27 @@ class MainActivity : ComponentActivity() {
                         }
                         RTDB.getChatRelevances { chatRoomRelevances = it }
 
-                        MAVINFORM.fetchArticles(this@MainActivity)
+                        isLoadingNews = true
+                        MAVINFORM.fetchArticles(this@MainActivity) {
+                            isLoadingNews = false
+                        }
 
+                        isLoadingTrains = true
                         TrainsProvider.getTrains(this@MainActivity) { newTrains, lastUpdated ->
                             trains = newTrains
                             trainsLastUpdated = lastUpdated
+                            isLoadingTrains = false
                         }
                     }
                 }
                 // listen for train updates
                 val trainTimer = Timer("trainTimer").apply {
                     schedule(timerTask {
-                        isLoading = true
+                        isLoadingTrains = true
                         TrainsProvider.getTrains(this@MainActivity) { newTrains, lastUpdated ->
                             trains = newTrains
                             trainsLastUpdated = lastUpdated
-                            isLoading = false
+                            isLoadingTrains = false
                         }
                     }, 1000L, TrainsProvider.SERVER_UPDATE_INTERVAL)
                 }
@@ -908,6 +914,32 @@ class MainActivity : ComponentActivity() {
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(8.dp),
                         ) {
+                            if (MAVINFORM.articles.isEmpty()) {
+                                item {
+                                    if (isLoadingNews) {
+                                        LoadingIndicator()
+                                    }
+                                    else {
+                                        Button(
+                                            onClick = {
+                                                isLoadingNews = true
+                                                MAVINFORM.fetchArticles(context) {
+                                                    isLoadingNews = false
+                                                }
+                                            },
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = null,
+                                            )
+                                            Text(
+                                                modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
+                                                text = "Hírek betöltése",
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                             items(items = MAVINFORM.articles) { article ->
                                 MIArticleDisplay(article = article)
                             }
