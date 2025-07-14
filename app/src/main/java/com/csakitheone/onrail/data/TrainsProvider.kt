@@ -14,6 +14,7 @@ import java.io.File
 class TrainsProvider {
     companion object {
 
+        val INTERNER_TIMEOUT = 1000L * 10 // 10 seconds
         val SERVER_UPDATE_INTERVAL = 1000L * 30 // 30 seconds
 
         private fun updateLocalCache(
@@ -31,36 +32,44 @@ class TrainsProvider {
             )
         }
 
-        fun getTrains(context: Context, callback: (List<EMMAVehiclePosition>, Long) -> Unit) {
-            Log.d("TrainsProvider", "Fetching trains...")
-
+        private fun getTrainsFromLocalCache(context: Context): List<EMMAVehiclePosition> {
             val localCacheFile = File(context.cacheDir, "trains_cache.json")
-
-            // 0. If there is no internet connection, use local cache
-            if (!NetworkUtils.hasInternet(context) && localCacheFile.exists()) {
+            return if (localCacheFile.exists()) {
                 try {
                     val cachedData = JSONArray(localCacheFile.readText())
-                    val cachedTrains = (0 until cachedData.length()).map { index ->
+                    (0 until cachedData.length()).map { index ->
                         val vehicleJson = cachedData.get(index)
                         EMMAVehiclePosition.fromJson(vehicleJson.toString())
                     }.sortedBy { it.trip.tripShortName }
-                    val lastUpdatedTimestamp =
-                        File(context.cacheDir, "trains_cache_metadata.json")
-                            .takeIf { it.exists() }
-                            ?.let { metadataFile ->
-                                val metadata = metadataFile.readText()
-                                metadata.substringAfter("\"lastUpdated\": ")
-                                    .substringBefore("}").toLongOrNull()
-                                    ?: 0L
-                            } ?: 0L
-                    callback(cachedTrains, lastUpdatedTimestamp)
-                    return
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    emptyList()
                 }
+            } else {
+                emptyList()
             }
+        }
 
-            // 1. If relevance is too old, fetch from remote source
+        private fun getLocalCacheLastUpdated(context: Context): Long {
+            val cacheMetadataFile = File(context.cacheDir, "trains_cache_metadata.json")
+            return if (cacheMetadataFile.exists()) {
+                try {
+                    val metadata = cacheMetadataFile.readText()
+                    metadata.substringAfter("\"lastUpdated\": ")
+                        .substringBefore("}").toLongOrNull() ?: 0L
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    0L
+                }
+            } else {
+                0L
+            }
+        }
+
+        private fun getTrainsFromInternet(
+            context: Context,
+            callback: (List<EMMAVehiclePosition>, Long) -> Unit
+        ) {
             RTDB.getVehiclePositionsRelevance { lastUpdated ->
                 RTDB.getConfigLong(
                     RTDB.CONFIG_KEY_EMMA_API_CALL_COOLDOWN,
@@ -73,50 +82,46 @@ class TrainsProvider {
                         EMMA.fetchTrains { trains ->
                             callback(trains, System.currentTimeMillis())
                             RTDB.updateVehicleData(trains)
-                            updateLocalCache(context, trains, System.currentTimeMillis())
                         }
                         return@getConfigLong
                     }
 
-                    // 2. If relevance is recent, try to get trains from own database
                     RTDB.getVehiclePositions { trains ->
                         if (trains.isNotEmpty()) {
                             RTDB.getVehiclePositionsRelevance {
                                 callback(trains, it)
-                                updateLocalCache(context, trains, it)
                             }
                             return@getVehiclePositions
                         }
 
-                        // 3. If database can't provide data, fallback to local cache
-                        if (localCacheFile.exists()) {
-                            try {
-                                val cachedData = JSONArray(localCacheFile.readText())
-                                val cachedTrains = (0 until cachedData.length()).map { index ->
-                                    val vehicleJson = cachedData.get(index)
-                                    EMMAVehiclePosition.fromJson(vehicleJson.toString())
-                                }.sortedBy { it.trip.tripShortName }
-                                val lastUpdatedTimestamp =
-                                    File(context.cacheDir, "trains_cache_metadata.json")
-                                        .takeIf { it.exists() }
-                                        ?.let { metadataFile ->
-                                            val metadata = metadataFile.readText()
-                                            metadata.substringAfter("\"lastUpdated\": ")
-                                                .substringBefore("}").toLongOrNull()
-                                                ?: 0L
-                                        } ?: 0L
-                                callback(cachedTrains, lastUpdatedTimestamp)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                callback(emptyList(), 0)
-                            }
-                        } else {
-                            callback(emptyList(), 0)
-                        }
+                        callback(emptyList(), lastUpdated)
                     }
                 }
             }
         }
 
+        fun getTrains(context: Context, callback: (List<EMMAVehiclePosition>, Long) -> Unit) {
+            val cachedTrains = getTrainsFromLocalCache(context)
+            val lastUpdatedTimestamp = getLocalCacheLastUpdated(context)
+
+            // 0. If there is no internet connection, use local cache
+            if (!NetworkUtils.hasInternet(context)) {
+                callback(cachedTrains, lastUpdatedTimestamp)
+            }
+
+            // 1. Get trains from internet if available
+            // 1.1. Check if RTDB is outdated
+            // 1.2. If outdated, fetch from EMMA
+            // 1.3. If not outdated, use RTDB data
+            getTrainsFromInternet(context) { trains, lastUpdated ->
+                if (trains.isNotEmpty()) {
+                    updateLocalCache(context, trains, lastUpdated)
+                    callback(trains, lastUpdated)
+                } else {
+                    // If no trains found, return cached data
+                    callback(cachedTrains, lastUpdatedTimestamp)
+                }
+            }
+        }
     }
 }

@@ -82,8 +82,7 @@ class MAVINFORM {
                 articles = cachedArticles.sortedByDescending { it.dateValidFrom }
                 callback(cachedArticles.sortedByDescending { it.dateValidFrom })
                 return
-            }
-            else {
+            } else {
                 val cacheDir = File(context.cacheDir, "mavinform")
                 if (cacheDir.exists()) cacheDir.deleteRecursively()
             }
@@ -100,7 +99,7 @@ class MAVINFORM {
                         val cacheFile = File(context.cacheDir, "mavinform/${article.title}.html")
                         cacheFile.parentFile?.mkdirs()
                         GlobalScope.launch {
-                            delay( index * 100L)
+                            delay(index * 100L)
                             cacheFile.writeText(article.toString())
                         }
                     }
@@ -124,7 +123,9 @@ class MAVINFORM {
             }
 
             GlobalScope.launch(Dispatchers.IO) {
-                val html = URL("$baseUrl${article.link}").openConnection().inputStream.bufferedReader().readText()
+                val html =
+                    URL("$baseUrl${article.link}").openConnection().inputStream.bufferedReader()
+                        .readText()
                 val htmlContent = html.substringAfter("<div class=\"field-body\">")
                     .substringBefore("<div class=\"social\">")
                     .trim()
@@ -167,49 +168,54 @@ class MAVINFORM {
             callback: (List<MIArticle>) -> Unit,
         ) {
             GlobalScope.launch(Dispatchers.IO) {
-                val html = URL(url).openConnection().inputStream.bufferedReader().readText()
-                val articles = html.substringAfter("custom-news-item")
-                    .split("custom-news-item")
-                    .filter { it.contains("news-title") }
-                    .map {
-                        val title = it
-                            .substringAfter("news-title\">")
-                            .substringAfter("href=\"")
-                            .substringAfter("\">")
-                            .substringBefore("</")
-                            .trim()
-                        val link = it
-                            .substringAfter("news-title\">")
-                            .substringAfter("href=\"")
-                            .substringBefore("\">")
-                        val dateValidFrom = it
-                            .substringAfter("Érvényes:")
-                            .substringAfter("date-display-single\">")
-                            .substringBefore("</")
-                            .trim()
-                        val dateLastUpdated = it
-                            .substringAfter("news-last-changed\">")
-                            .substringAfter("field-content\">")
-                            .substringBefore("</")
-                            .trim()
-                        val scopes = it
-                            .substringAfter("field-territorial-scope\">")
-                            .split("field-territorial-scope\">")
-                            .map { scope -> scope.substringBefore("</").trim() }
-                            .filter { scope -> scope.isNotEmpty() }
-                        val isDrastic = it.contains("Rendkívüli változás")
+                try {
+                    val html = URL(url).openConnection().inputStream.bufferedReader().readText()
+                    val articles = html.substringAfter("custom-news-item")
+                        .split("custom-news-item")
+                        .filter { it.contains("news-title") }
+                        .map {
+                            val title = it
+                                .substringAfter("news-title\">")
+                                .substringAfter("href=\"")
+                                .substringAfter("\">")
+                                .substringBefore("</")
+                                .trim()
+                            val link = it
+                                .substringAfter("news-title\">")
+                                .substringAfter("href=\"")
+                                .substringBefore("\">")
+                            val dateValidFrom = it
+                                .substringAfter("Érvényes:")
+                                .substringAfter("date-display-single\">")
+                                .substringBefore("</")
+                                .trim()
+                            val dateLastUpdated = it
+                                .substringAfter("news-last-changed\">")
+                                .substringAfter("field-content\">")
+                                .substringBefore("</")
+                                .trim()
+                            val scopes = it
+                                .substringAfter("field-territorial-scope\">")
+                                .split("field-territorial-scope\">")
+                                .map { scope -> scope.substringBefore("</").trim() }
+                                .filter { scope -> scope.isNotEmpty() }
+                            val isDrastic = it.contains("Rendkívüli változás")
 
-                        MIArticle(
-                            title = title,
-                            link = link,
-                            dateValidFrom = dateValidFrom,
-                            dateLastUpdated = dateLastUpdated,
-                            scopes = scopes,
-                            isDrastic = isDrastic,
-                        )
-                    }
+                            MIArticle(
+                                title = title,
+                                link = link,
+                                dateValidFrom = dateValidFrom,
+                                dateLastUpdated = dateLastUpdated,
+                                scopes = scopes,
+                                isDrastic = isDrastic,
+                            )
+                        }
 
-                callback(articles)
+                    callback(articles)
+                } catch (e: Exception) {
+                    Log.e("MAVINFORM", "Error fetching articles: ${e.message}")
+                    callback(emptyList())
+                }
             }
         }
 

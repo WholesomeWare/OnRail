@@ -13,13 +13,18 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 
 class EMMA {
     companion object {
         private const val BASE_URL =
             "https://emma.mav.hu/otp2-backend/otp/routers/default/index/graphql"
-        private val client = OkHttpClient()
+        private val client = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .build()
 
         @OptIn(DelicateCoroutinesApi::class)
         fun fetchTrains(callback: (List<EMMAVehiclePosition>) -> Unit = {}) {
