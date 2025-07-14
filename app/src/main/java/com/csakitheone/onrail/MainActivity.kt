@@ -4,48 +4,49 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.text.format.DateFormat
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.FilterList
@@ -67,15 +68,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedFilterChip
+import androidx.compose.material3.ElevatedToggleButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -120,7 +121,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowInsetsCompat
 import com.csakitheone.onrail.data.TrainsProvider
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.sources.LocalSettings
@@ -129,10 +129,6 @@ import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.theme.OnRailTheme
-import com.csakitheone.onrail.ui.theme.colorDelayDrastic
-import com.csakitheone.onrail.ui.theme.colorDelayMajor
-import com.csakitheone.onrail.ui.theme.colorDelayMinor
-import com.csakitheone.onrail.ui.theme.colorDelayNone
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -142,7 +138,6 @@ import ovh.plrapps.mapcompose.api.removeAllMarkers
 import ovh.plrapps.mapcompose.api.removeClusterer
 import ovh.plrapps.mapcompose.api.scrollTo
 import ovh.plrapps.mapcompose.ui.MapUI
-import ovh.plrapps.mapcompose.ui.layout.Fill
 import ovh.plrapps.mapcompose.ui.state.markers.model.RenderingStrategy
 import java.util.Timer
 import kotlin.concurrent.timerTask
@@ -177,13 +172,16 @@ class MainActivity : ComponentActivity() {
             val TAB_MAP = 0
             val TAB_MAVINFORM = 1
 
-            val MAP_FILTER_ALL_TRAINS = "Vonatok"
-            val MAP_FILTER_MAVINFORM = "MÁVINFORM"
+            val MAP_FILTER_ALL_TRAINS = "Összes vonat"
             val MAP_FILTER_SAVED_TRAINS = "Mentett vonatok"
+            val MAP_FILTER_ACTIVE_TRAINS = "Aktív vonatok"
+            val MAP_FILTER_MAVINFORM = "Területek"
 
             var hasInternet by remember { mutableStateOf(NetworkUtils.hasInternet(context)) }
             var motdText by remember { mutableStateOf("") }
             var isMotdCollapsed by rememberSaveable { mutableStateOf(false) }
+            var chatRoomRelevances by remember { mutableStateOf(emptyMap<RTDB.ChatRoomType, Map<String, Long>>()) }
+            var activeFilterDurationMillis by rememberSaveable { mutableLongStateOf(0L) }
             var isLoading by remember { mutableStateOf(true) }
             var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
             var trainsLastUpdated by remember { mutableLongStateOf(0L) }
@@ -193,6 +191,7 @@ class MainActivity : ComponentActivity() {
 
             var isSearchActive by remember { mutableStateOf(false) }
             var searchQuery by remember { mutableStateOf("") }
+            var isMapFilterMenuOpen by remember { mutableStateOf(false) }
             var selectedMapFilter by remember { mutableStateOf(MAP_FILTER_ALL_TRAINS) }
             var showMarkerBadges by remember { mutableStateOf(true) }
             var isLoadingLocation by remember { mutableStateOf(false) }
@@ -208,21 +207,34 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            val visibleTrains by remember(
+            val filteredTrains by remember(
                 trains,
                 searchQuery,
                 selectedMapFilter,
+                chatRoomRelevances,
+                activeFilterDurationMillis,
             ) {
                 derivedStateOf {
+                    if (
+                        listOf(MAP_FILTER_MAVINFORM)
+                            .contains(selectedMapFilter)
+                    ) {
+                        return@derivedStateOf emptyList()
+                    }
+
                     trains.filter { train ->
                         val isSavedTrain =
                             selectedMapFilter != MAP_FILTER_SAVED_TRAINS || LocalSettings.savedTrainTripNames.contains(
                                 train.trip.tripShortName
                             )
+                        val trainRelevance = chatRoomRelevances[RTDB.ChatRoomType.TRAIN]
+                            ?.get(train.trip.tripShortName) ?: 0L
+                        val isActiveTrain =
+                            selectedMapFilter != MAP_FILTER_ACTIVE_TRAINS || trainRelevance >= System.currentTimeMillis() - activeFilterDurationMillis
                         val isSearched =
                             train.trip.tripShortName.contains(searchQuery, ignoreCase = true) ||
                                     train.trip.tripHeadsign.contains(searchQuery, ignoreCase = true)
-                        isSavedTrain && isSearched
+                        isSavedTrain && isActiveTrain && isSearched
                     }
                 }
             }
@@ -248,6 +260,10 @@ class MainActivity : ComponentActivity() {
 
                     if (isConnected) {
                         RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
+                        RTDB.getConfigLong(RTDB.CONFIG_KEY_ACTIVE_FILTER_DURATION_MILLIS) {
+                            activeFilterDurationMillis = it
+                        }
+                        RTDB.getChatRelevances { chatRoomRelevances = it }
 
                         MAVINFORM.fetchArticles(this@MainActivity)
 
@@ -277,7 +293,7 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(
                 LocationUtils.current,
-                visibleTrains,
+                filteredTrains,
                 MAVINFORM.articles,
                 selectedMapFilter,
                 showMarkerBadges,
@@ -287,7 +303,7 @@ class MainActivity : ComponentActivity() {
 
                 mapState.addClusterer("trains") { ids ->
                     val worstDelay = ids.mapNotNull { id ->
-                        visibleTrains.firstOrNull { it.trip.gtfsId == id }?.delayMinutes
+                        filteredTrains.firstOrNull { it.trip.gtfsId == id }?.delayMinutes
                     }.maxOrNull() ?: 0
                     val worstDelayColor = EMMAVehiclePosition.getDelayColor(worstDelay)
 
@@ -307,82 +323,77 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (listOf(MAP_FILTER_ALL_TRAINS, MAP_FILTER_SAVED_TRAINS).contains(
-                        selectedMapFilter
-                    )
-                ) {
-                    visibleTrains.forEach { train ->
-                        val latLng = LatLng(train.lat, train.lon)
-                        mapState.addMarker(
-                            id = train.trip.gtfsId,
-                            x = latLng.normalized.longitude,
-                            y = latLng.normalized.latitude,
-                            relativeOffset = Offset(-.5f, -.5f),
-                            renderingStrategy = RenderingStrategy.Clustering("trains"),
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                val interactionSource = remember { MutableInteractionSource() }
-                                val viewConfiguration = LocalViewConfiguration.current
-                                LaunchedEffect(interactionSource) {
-                                    var isLongPress = false
-                                    interactionSource.interactions.collectLatest {
-                                        when (it) {
-                                            is PressInteraction.Press -> {
-                                                isLongPress = false
-                                                delay(viewConfiguration.longPressTimeoutMillis)
-                                                isLongPress = true
-                                                NotifUtils.showBubbleForTrain(
-                                                    this@MainActivity,
-                                                    train
-                                                )
-                                            }
+                filteredTrains.forEach { train ->
+                    val latLng = LatLng(train.lat, train.lon)
+                    mapState.addMarker(
+                        id = train.trip.gtfsId,
+                        x = latLng.normalized.longitude,
+                        y = latLng.normalized.latitude,
+                        relativeOffset = Offset(-.5f, -.5f),
+                        renderingStrategy = RenderingStrategy.Clustering("trains"),
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val interactionSource = remember { MutableInteractionSource() }
+                            val viewConfiguration = LocalViewConfiguration.current
+                            LaunchedEffect(interactionSource) {
+                                var isLongPress = false
+                                interactionSource.interactions.collectLatest {
+                                    when (it) {
+                                        is PressInteraction.Press -> {
+                                            isLongPress = false
+                                            delay(viewConfiguration.longPressTimeoutMillis)
+                                            isLongPress = true
+                                            NotifUtils.showBubbleForTrain(
+                                                this@MainActivity,
+                                                train
+                                            )
+                                        }
 
-                                            is PressInteraction.Release -> {
-                                                if (!isLongPress) {
-                                                    startActivity(
-                                                        Intent(
-                                                            this@MainActivity,
-                                                            TrainActivity::class.java
-                                                        ).putExtra("trainJson", train.toString())
-                                                    )
-                                                }
+                                        is PressInteraction.Release -> {
+                                            if (!isLongPress) {
+                                                startActivity(
+                                                    Intent(
+                                                        this@MainActivity,
+                                                        TrainActivity::class.java
+                                                    ).putExtra("trainJson", train.toString())
+                                                )
                                             }
                                         }
                                     }
                                 }
+                            }
 
-                                Box(
-                                    contentAlignment = Alignment.Center,
+                            Box(
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                FilledIconButton(
+                                    onClick = {},
+                                    interactionSource = interactionSource,
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = train.delayColor,
+                                    ),
                                 ) {
-                                    FilledIconButton(
-                                        onClick = {},
-                                        interactionSource = interactionSource,
-                                        colors = IconButtonDefaults.filledIconButtonColors(
-                                            containerColor = train.delayColor,
-                                        ),
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Train,
-                                            contentDescription = null,
-                                            tint = Color.Black.copy(alpha = .6f),
-                                        )
-                                    }
                                     Icon(
-                                        modifier = Modifier
-                                            .offset(
-                                                x = (sin(Math.PI * train.heading / 180) * 22).dp,
-                                                y = (-cos(Math.PI * train.heading / 180) * 22).dp,
-                                            )
-                                            .clip(CircleShape)
-                                            .background(train.delayColor)
-                                            .rotate(train.heading.toFloat() - 90f),
-                                        imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
+                                        imageVector = Icons.Default.Train,
                                         contentDescription = null,
+                                        tint = Color.Black.copy(alpha = .6f),
                                     )
                                 }
-                                if (showMarkerBadges) {
-                                    Badge { Text(text = train.trip.tripShortName) }
-                                }
+                                Icon(
+                                    modifier = Modifier
+                                        .offset(
+                                            x = (sin(Math.PI * train.heading / 180) * 22).dp,
+                                            y = (-cos(Math.PI * train.heading / 180) * 22).dp,
+                                        )
+                                        .clip(CircleShape)
+                                        .background(train.delayColor)
+                                        .rotate(train.heading.toFloat() - 90f),
+                                    imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
+                                    contentDescription = null,
+                                )
+                            }
+                            if (showMarkerBadges) {
+                                Badge { Text(text = train.trip.tripShortName) }
                             }
                         }
                     }
@@ -755,7 +766,8 @@ class MainActivity : ComponentActivity() {
                                     contentDescription = null,
                                 )
                                 Text(
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
                                         .padding(start = 8.dp),
                                     text = "Nincs internet kapcsolat",
                                     style = MaterialTheme.typography.bodySmall,
@@ -949,13 +961,11 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     AnimatedVisibility(!isSearchActive) {
                                         Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .horizontalScroll(rememberScrollState()),
+                                            modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {
-                                            IconButton(
+                                            FilledIconButton(
                                                 onClick = { isSearchActive = true },
                                             ) {
                                                 Icon(
@@ -963,42 +973,117 @@ class MainActivity : ComponentActivity() {
                                                     contentDescription = null
                                                 )
                                             }
-                                            FilterChip(
-                                                selected = selectedMapFilter == MAP_FILTER_ALL_TRAINS,
-                                                onClick = {
-                                                    selectedMapFilter = MAP_FILTER_ALL_TRAINS
+                                            ExposedDropdownMenuBox(
+                                                modifier = Modifier.weight(1f),
+                                                expanded = isMapFilterMenuOpen,
+                                                onExpandedChange = {
+                                                    isMapFilterMenuOpen = !isMapFilterMenuOpen
                                                 },
-                                                label = { Text(text = "Vonatok") },
-                                            )
-                                            FilterChip(
-                                                selected = selectedMapFilter == MAP_FILTER_MAVINFORM,
-                                                onClick = {
-                                                    selectedMapFilter = MAP_FILTER_MAVINFORM
-                                                },
-                                                label = { Text(text = "MÁVINFORM") },
-                                            )
-                                            FilterChip(
-                                                selected = selectedMapFilter == MAP_FILTER_SAVED_TRAINS,
-                                                onClick = {
-                                                    selectedMapFilter = MAP_FILTER_SAVED_TRAINS
-                                                },
-                                                label = { Text(text = "Mentett vonatok") },
-                                            )
-                                            Row(
-                                                modifier = Modifier
-                                                    .clickable {
-                                                        showMarkerBadges = !showMarkerBadges
-                                                    },
-                                                verticalAlignment = Alignment.CenterVertically,
                                             ) {
-                                                Checkbox(
-                                                    checked = showMarkerBadges,
-                                                    onCheckedChange = { showMarkerBadges = it },
-                                                )
-                                                Text(
-                                                    text = "Címkék mutatása",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                )
+                                                ElevatedToggleButton(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .menuAnchor(
+                                                            type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                                        ),
+                                                    checked = isMapFilterMenuOpen,
+                                                    onCheckedChange = {},
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.FilterList,
+                                                        contentDescription = null,
+                                                    )
+                                                    AnimatedContent(
+                                                        modifier = Modifier.weight(1f),
+                                                        targetState = selectedMapFilter,
+                                                    ) {
+                                                        Text(
+                                                            modifier = Modifier
+                                                                .padding(horizontal = ButtonDefaults.IconSpacing),
+                                                            text = it,
+                                                        )
+                                                    }
+                                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                                        expanded = isMapFilterMenuOpen,
+                                                    )
+                                                }
+                                                ExposedDropdownMenu(
+                                                    expanded = isMapFilterMenuOpen,
+                                                    onDismissRequest = {
+                                                        isMapFilterMenuOpen = false
+                                                    },
+                                                ) {
+                                                    DropdownMenuItem(
+                                                        onClick = {
+                                                            selectedMapFilter =
+                                                                MAP_FILTER_ALL_TRAINS
+                                                            isMapFilterMenuOpen = false
+                                                        },
+                                                        text = { Text(text = MAP_FILTER_ALL_TRAINS) },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Train,
+                                                                contentDescription = null
+                                                            )
+                                                        },
+                                                    )
+                                                    DropdownMenuItem(
+                                                        onClick = {
+                                                            selectedMapFilter =
+                                                                MAP_FILTER_SAVED_TRAINS
+                                                            isMapFilterMenuOpen = false
+                                                        },
+                                                        text = { Text(text = MAP_FILTER_SAVED_TRAINS) },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Bookmark,
+                                                                contentDescription = null
+                                                            )
+                                                        },
+                                                    )
+                                                    DropdownMenuItem(
+                                                        onClick = {
+                                                            selectedMapFilter =
+                                                                MAP_FILTER_ACTIVE_TRAINS
+                                                            isMapFilterMenuOpen = false
+                                                        },
+                                                        text = { Text(text = MAP_FILTER_ACTIVE_TRAINS) },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = Icons.Default.ChatBubble,
+                                                                contentDescription = null
+                                                            )
+                                                        },
+                                                    )
+                                                    DropdownMenuItem(
+                                                        onClick = {
+                                                            selectedMapFilter = MAP_FILTER_MAVINFORM
+                                                            isMapFilterMenuOpen = false
+                                                        },
+                                                        text = { Text(text = MAP_FILTER_MAVINFORM) },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Info,
+                                                                contentDescription = null
+                                                            )
+                                                        },
+                                                    )
+                                                    HorizontalDivider()
+                                                    DropdownMenuItem(
+                                                        onClick = {
+                                                            showMarkerBadges = !showMarkerBadges
+                                                            isMapFilterMenuOpen = false
+                                                        },
+                                                        text = { Text(text = "Címkék mutatása") },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                imageVector = if (showMarkerBadges) Icons.Default.CheckBox
+                                                                else Icons.Default.CheckBoxOutlineBlank,
+                                                                contentDescription = null
+                                                            )
+                                                        },
+                                                    )
+                                                }
                                             }
                                         }
                                     }

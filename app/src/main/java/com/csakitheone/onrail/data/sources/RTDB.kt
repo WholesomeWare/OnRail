@@ -20,8 +20,9 @@ class RTDB {
 
     companion object {
 
-        val CONFIG_KEY_MOTD = "MOTD"
+        val CONFIG_KEY_ACTIVE_FILTER_DURATION_MILLIS = "ACTIVE_FILTER_DURATION_MILLIS"
         val CONFIG_KEY_EMMA_API_CALL_COOLDOWN = "EMMA_API_CALL_COOLDOWN"
+        val CONFIG_KEY_MOTD = "MOTD"
         val OLD_MESSAGE_CUTOFF = 1000L * 60 * 60 * 24 * 7 // 7 days
         val MESSAGE_CONTENT_LENGTH_LIMIT = 500
         val MESSAGE_SENDING_COOLDOWN = 1000L * 5
@@ -63,6 +64,35 @@ class RTDB {
                     callback(value)
                 }.addOnFailureListener {
                     callback(defaultValue)
+                }
+        }
+
+        fun getChatRelevances(
+            callback: (Map<ChatRoomType, Map<String, Long>>) -> Unit,
+        ) {
+            ref.child("stats/relevance").get()
+                .addOnSuccessListener { snapshot ->
+                    if (!snapshot.exists()) {
+                        callback(emptyMap())
+                        return@addOnSuccessListener
+                    }
+                    val relevanceMap = mutableMapOf<ChatRoomType, Map<String, Long>>()
+                    if (snapshot.hasChild(ChatRoomType.TRAIN.path)) {
+                        relevanceMap[ChatRoomType.TRAIN] = snapshot.child(ChatRoomType.TRAIN.path)
+                            .children.associate {
+                                (it.key ?: "(empty)") to (it.getValue(Long::class.java) ?: 0L)
+                            }
+                    }
+                    if (snapshot.hasChild(ChatRoomType.TERRITORY.path)) {
+                        relevanceMap[ChatRoomType.TERRITORY] =
+                            snapshot.child(ChatRoomType.TERRITORY.path)
+                                .children.associate {
+                                    (it.key ?: "(empty)") to (it.getValue(Long::class.java) ?: 0L)
+                                }
+                    }
+                    callback(relevanceMap)
+                }.addOnFailureListener {
+                    callback(emptyMap())
                 }
         }
 
@@ -126,6 +156,7 @@ class RTDB {
             lastMessageSentTimestamp = currentTime
 
             val messagePath = "chats/${chatRoomType.path}/$chatRoomId/${message.timestamp}"
+            val relevancePath = "stats/relevance/${chatRoomType.path}/$chatRoomId"
 
             ref.child(messagePath)
                 .setValue(message)
@@ -135,14 +166,7 @@ class RTDB {
                         .setValue(ServerValue.TIMESTAMP)
                 }
 
-            //TODO: remove later
-            if (chatRoomType == ChatRoomType.TRAIN) {
-                sendOldTrainMessage(
-                    trainId = chatRoomId,
-                    message = message,
-                    callback = {},
-                )
-            }
+            ref.child(relevancePath).setValue(ServerValue.TIMESTAMP)
         }
 
         fun removeMessage(
@@ -154,40 +178,6 @@ class RTDB {
             val messagePath = "chats/${chatRoomType.path}/$chatRoomId/${message.key}"
 
             ref.child(messagePath).removeValue()
-                .addOnCompleteListener { callback(it.isSuccessful) }
-
-            //TODO: remove later
-            if (chatRoomType == ChatRoomType.TRAIN) {
-                removeOldTrainMessage(
-                    trainId = chatRoomId,
-                    message = message,
-                    callback = {},
-                )
-            }
-        }
-
-        @Deprecated("Chats are moving from trains to chats")
-        fun sendOldTrainMessage(
-            trainId: String,
-            message: Message,
-            callback: (Boolean) -> Unit = {},
-        ) {
-            ref.child("trains/$trainId/messages/${message.timestamp}")
-                .setValue(message)
-                .addOnCompleteListener {
-                    callback(it.isSuccessful)
-                    ref.child("trains/$trainId/messages/${message.timestamp}/timestamp")
-                        .setValue(ServerValue.TIMESTAMP)
-                }
-        }
-
-        @Deprecated("Chats are moving from trains to chats")
-        fun removeOldTrainMessage(
-            trainId: String,
-            message: Message,
-            callback: (Boolean) -> Unit = {},
-        ) {
-            ref.child("trains/$trainId/messages/${message.timestamp}").removeValue()
                 .addOnCompleteListener { callback(it.isSuccessful) }
         }
 
@@ -264,33 +254,6 @@ class RTDB {
                                             )
                                         }
                                 }
-                            }
-                        }
-                    }
-                }
-
-            //TODO: remove later
-            ref.child("trains").get()
-                .addOnSuccessListener { trainsSnapshot ->
-                    val oldMessageCutoff = System.currentTimeMillis() - OLD_MESSAGE_CUTOFF
-
-                    for (trainSnapshot in trainsSnapshot.children) {
-                        val messages = trainSnapshot.child("messages")
-
-                        if (!messages.exists()) continue
-
-                        for (messageSnapshot in messages.children) {
-                            val message = messageSnapshot.getValue(Message::class.java)
-                                ?.copy(key = messageSnapshot.key ?: "")
-                            if (message != null && message.timestamp < oldMessageCutoff) {
-                                ref.child("trains/${trainSnapshot.key}/messages/${messageSnapshot.key}")
-                                    .removeValue()
-                                    .addOnSuccessListener {
-                                        Log.d(
-                                            "RTDB",
-                                            "Removed old message: ${message.content} from train: ${trainSnapshot.key}"
-                                        )
-                                    }
                             }
                         }
                     }
