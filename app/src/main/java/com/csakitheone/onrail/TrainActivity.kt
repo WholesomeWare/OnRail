@@ -12,6 +12,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -112,6 +113,7 @@ import com.csakitheone.onrail.data.sources.LocalSettings
 import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
+import com.csakitheone.onrail.ui.components.ServerInfoDialog
 import com.csakitheone.onrail.ui.fadingEdge
 import com.csakitheone.onrail.ui.theme.OnRailTheme
 import kotlinx.coroutines.delay
@@ -166,6 +168,7 @@ class TrainActivity : ComponentActivity() {
                 }
             }
         }
+        var isServerInfoDialogOpen by rememberSaveable { mutableStateOf(false) }
         var isTrainInfoDialogOpen by rememberSaveable { mutableStateOf(false) }
         var isSendingLocationEnabled by rememberSaveable { mutableStateOf(false) }
         var isSendingLocationHintVisible by rememberSaveable { mutableStateOf(true) }
@@ -408,6 +411,13 @@ class TrainActivity : ComponentActivity() {
         }
 
         OnRailTheme {
+            if (isServerInfoDialogOpen) {
+                ServerInfoDialog(
+                    title = trainsLastUpdatedText,
+                    onDismissRequest = { isServerInfoDialogOpen = false },
+                )
+            }
+
             if (isTrainInfoDialogOpen) {
                 AlertDialog(
                     onDismissRequest = { isTrainInfoDialogOpen = false },
@@ -654,8 +664,14 @@ class TrainActivity : ComponentActivity() {
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                     Text(
+                                        modifier = Modifier.clickable {
+                                            isServerInfoDialogOpen = true
+                                        },
                                         text = trainsLastUpdatedText,
                                         style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                     )
                                 }
                                 IconButton(

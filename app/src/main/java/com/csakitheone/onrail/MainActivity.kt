@@ -22,11 +22,13 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -54,14 +56,11 @@ import androidx.compose.material.icons.filled.GpsNotFixed
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SignalCellularOff
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.filled.Update
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -113,7 +112,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalViewConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -128,6 +126,7 @@ import com.csakitheone.onrail.data.sources.MAVINFORM
 import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
+import com.csakitheone.onrail.ui.components.ServerInfoDialog
 import com.csakitheone.onrail.ui.theme.OnRailTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -187,7 +186,7 @@ class MainActivity : ComponentActivity() {
             var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
             var trainsLastUpdated by remember { mutableLongStateOf(0L) }
 
-            var isUpdateInfoDialogOpen by remember { mutableStateOf(false) }
+            var isServerInfoDialogOpen by remember { mutableStateOf(false) }
             var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
 
             var isSearchActive by remember { mutableStateOf(false) }
@@ -240,10 +239,28 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            fun refresh() {
+                RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
+                RTDB.getConfigLong(RTDB.CONFIG_KEY_ACTIVE_FILTER_DURATION_MILLIS) {
+                    activeFilterDurationMillis = it
+                }
+                RTDB.getChatRelevances { chatRoomRelevances = it }
+
+                isLoadingNews = true
+                MAVINFORM.fetchArticles(this@MainActivity) {
+                    isLoadingNews = false
+                }
+
+                isLoadingTrains = true
+                TrainsProvider.getTrains(this@MainActivity) { newTrains, lastUpdated ->
+                    trains = newTrains
+                    trainsLastUpdated = lastUpdated
+                    isLoadingTrains = false
+                }
+            }
+
             DisposableEffect(Unit) {
                 // Launch only
-                // fetch MÁVINFORM articles
-                MAVINFORM.fetchArticles(this@MainActivity)
                 // set map to Hungary
                 val latLngHungary = LatLng(47.1625, 19.5033)
                 coroutineScope.launch {
@@ -260,23 +277,7 @@ class MainActivity : ComponentActivity() {
                     hasInternet = isConnected
 
                     if (isConnected) {
-                        RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }
-                        RTDB.getConfigLong(RTDB.CONFIG_KEY_ACTIVE_FILTER_DURATION_MILLIS) {
-                            activeFilterDurationMillis = it
-                        }
-                        RTDB.getChatRelevances { chatRoomRelevances = it }
-
-                        isLoadingNews = true
-                        MAVINFORM.fetchArticles(this@MainActivity) {
-                            isLoadingNews = false
-                        }
-
-                        isLoadingTrains = true
-                        TrainsProvider.getTrains(this@MainActivity) { newTrains, lastUpdated ->
-                            trains = newTrains
-                            trainsLastUpdated = lastUpdated
-                            isLoadingTrains = false
-                        }
+                        refresh()
                     }
                 }
                 // listen for train updates
@@ -496,112 +497,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            if (isUpdateInfoDialogOpen) {
-                AlertDialog(
-                    onDismissRequest = { isUpdateInfoDialogOpen = false },
-                    title = { Text(text = trainsLastUpdatedText) },
-                    text = {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "Az alkalmazás egy saját szerveren keresztül kéri le az " +
-                                        "adatokat, hogy a MÁV szerverei ne terhelődjenek. " +
-                                        "Így a MÁV szerverek ugyanannyi kérést kapnak 1, 100 vagy " +
-                                        "10000 felhasználónál is.\n" +
-                                        "Az utolsó frissítés ideje ezeknek a kéréseknek az idejét " +
-                                        "mutatja.",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PhoneAndroid,
-                                        contentDescription = null,
-                                    )
-                                    Text(
-                                        text = "Utas telója",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Remove,
-                                        contentDescription = null,
-                                    )
-                                    Text(
-                                        text = "Firebase SDK",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_database_24px),
-                                        contentDescription = null,
-                                    )
-                                    Text(
-                                        text = "Saját szerver",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Remove,
-                                        contentDescription = null,
-                                    )
-                                    Text(
-                                        text = "EMMA API",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_host_24px),
-                                        contentDescription = null,
-                                    )
-                                    Text(
-                                        text = "MÁV szerver",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Ez az ábra csak illusztráció. A valós architektúra eltér ettől.",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { isUpdateInfoDialogOpen = false }) {
-                            Text(text = "OK")
-                        }
-                    }
+            if (isServerInfoDialogOpen) {
+                ServerInfoDialog(
+                    title = trainsLastUpdatedText,
+                    onDismissRequest = { isServerInfoDialogOpen = false },
                 )
             }
 
@@ -634,29 +533,51 @@ class MainActivity : ComponentActivity() {
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         HorizontalFloatingToolbar(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(IntrinsicSize.Min),
                             expanded = true,
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                Text(
-                                    text = stringResource(R.string.app_name),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    modifier = Modifier.clickable {
-                                        isUpdateInfoDialogOpen = true
-                                    },
-                                    text = trainsLastUpdatedText,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                Column(
+                                    modifier = Modifier
+                                        .padding(horizontal = 8.dp)
+                                        .weight(1f),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.app_name),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        modifier = Modifier.clickable {
+                                            isServerInfoDialogOpen = true
+                                        },
+                                        text = trainsLastUpdatedText,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                if (isLoadingTrains || isLoadingNews) {
+                                    LoadingIndicator()
+                                }
+                                else {
+                                    IconButton(
+                                        enabled = hasInternet,
+                                        onClick = { refresh() },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Refresh,
+                                            contentDescription = "Frissítés",
+                                        )
+                                    }
+                                }
                             }
                         }
                         ProfileIcon(
@@ -923,8 +844,7 @@ class MainActivity : ComponentActivity() {
                                 item {
                                     if (isLoadingNews) {
                                         LoadingIndicator()
-                                    }
-                                    else {
+                                    } else {
                                         Button(
                                             onClick = {
                                                 isLoadingNews = true

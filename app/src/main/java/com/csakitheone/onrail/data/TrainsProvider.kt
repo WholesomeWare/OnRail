@@ -14,8 +14,7 @@ import java.io.File
 class TrainsProvider {
     companion object {
 
-        val INTERNER_TIMEOUT = 1000L * 10 // 10 seconds
-        val SERVER_UPDATE_INTERVAL = 1000L * 30 // 30 seconds
+        val SERVER_UPDATE_INTERVAL = 1000L * 60 // 60 seconds
 
         private fun updateLocalCache(
             context: Context,
