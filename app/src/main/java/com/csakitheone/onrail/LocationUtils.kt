@@ -18,6 +18,7 @@ import ovh.plrapps.mapcompose.api.addLayer
 import ovh.plrapps.mapcompose.api.enableZooming
 import ovh.plrapps.mapcompose.ui.state.MapState
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.net.URL
@@ -122,6 +123,44 @@ class LocationUtils {
                 }
         }
 
+        private fun getMapTile(
+            context: Context,
+            row: Int,
+            col: Int,
+            zoom: Int
+        ): InputStream? {
+            if (zoom < 0) {
+                return null
+            }
+
+            val cacheFile = File(context.cacheDir, "tiles/tile_${zoom}_${col}_${row}.png")
+
+            if (cacheFile.exists()) {
+                return cacheFile.inputStream()
+            }
+
+            if (PowerUtils.isPowerSaveMode) {
+                return getMapTile(context, row, col, zoom - 1)
+            }
+
+            if (cacheFile.parentFile?.exists() == false) {
+                cacheFile.parentFile?.mkdirs()
+            }
+
+            return runCatching {
+                val inputStream = URL("https://tile.openstreetmap.org/${zoom}/${col}/${row}.png")
+                    .openConnection()
+                    .apply { setRequestProperty("User-Agent", "OnRailApp/1.0") }
+                    .inputStream
+
+                FileOutputStream(cacheFile).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+
+                cacheFile.inputStream()
+            }.getOrNull()
+        }
+
         fun getMapState(context: Context): MapState {
             val level = 18
             val tileSize = 1024
@@ -134,32 +173,7 @@ class LocationUtils {
                 tileSize = tileSize,
             ).apply {
                 addLayer({ row, col, zoom ->
-                    val cacheFile = File(context.cacheDir, "tiles/tile_${zoom}_${col}_${row}.png")
-
-                    if (cacheFile.exists()) {
-                        return@addLayer cacheFile.inputStream()
-                    }
-
-                    if (PowerUtils.isPowerSaveMode) {
-                        return@addLayer null
-                    }
-
-                    if (cacheFile.parentFile?.exists() == false) {
-                        cacheFile.parentFile?.mkdirs()
-                    }
-
-                    runCatching {
-                        val inputStream = URL("https://tile.openstreetmap.org/${zoom}/${col}/${row}.png")
-                            .openConnection()
-                            .apply { setRequestProperty("User-Agent", "OnRailApp/1.0") }
-                            .inputStream
-
-                        FileOutputStream(cacheFile).use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-
-                        cacheFile.inputStream()
-                    }.getOrNull()
+                    getMapTile(context, row, col, zoom)
                 })
 
                 enableZooming()

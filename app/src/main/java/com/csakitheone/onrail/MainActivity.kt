@@ -501,7 +501,9 @@ class MainActivity : ComponentActivity() {
                     onDismissRequest = { isUpdateInfoDialogOpen = false },
                     title = { Text(text = trainsLastUpdatedText) },
                     text = {
-                        Column {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             Text(
                                 text = "Az alkalmazás egy saját szerveren keresztül kéri le az " +
                                         "adatokat, hogy a MÁV szerverei ne terhelődjenek. " +
@@ -589,7 +591,10 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
-                            Text(text = "Ez az ábra csak illusztráció. A valós architektúra eltér ettől.")
+                            Text(
+                                text = "Ez az ábra csak illusztráció. A valós architektúra eltér ettől.",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
                         }
                     },
                     confirmButton = {
