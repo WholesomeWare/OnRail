@@ -569,8 +569,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 if (isLoadingTrains || isLoadingNews) {
                                     LoadingIndicator()
-                                }
-                                else {
+                                } else {
                                     IconButton(
                                         enabled = hasInternet,
                                         onClick = { refresh() },
@@ -993,7 +992,17 @@ class MainActivity : ComponentActivity() {
                                                                 MAP_FILTER_SAVED_TRAINS
                                                             isMapFilterMenuOpen = false
                                                         },
-                                                        text = { Text(text = MAP_FILTER_SAVED_TRAINS) },
+                                                        text = {
+                                                            Text(
+                                                                text = "$MAP_FILTER_SAVED_TRAINS (${
+                                                                    trains.count {
+                                                                        LocalSettings.savedTrainTripNames.contains(
+                                                                            it.trip.tripShortName
+                                                                        )
+                                                                    }
+                                                                }/${LocalSettings.savedTrainTripNames.size})"
+                                                            )
+                                                        },
                                                         leadingIcon = {
                                                             Icon(
                                                                 imageVector = Icons.Default.Bookmark,
