@@ -1,7 +1,8 @@
 package com.csakitheone.onrail.data.model
 
+import android.content.Context
+import android.graphics.drawable.Icon
 import android.os.Parcelable
-import android.util.Log
 import androidx.compose.ui.graphics.Color
 import com.csakitheone.onrail.ui.theme.colorDelayDrastic
 import com.csakitheone.onrail.ui.theme.colorDelayMajor
@@ -54,6 +55,15 @@ data class EMMAVehiclePosition(
         get() = getDelayColor(delayMinutes)
     val onDelayColor: Color
         get() = getOnDelayColor(delayMinutes)
+
+    fun getDelayIcon(context: Context): Icon {
+        return when {
+            delayMinutes < 5 -> Icon.createWithResource(context, com.csakitheone.onrail.R.drawable.ic_train_delay_none)
+            delayMinutes < 15 -> Icon.createWithResource(context, com.csakitheone.onrail.R.drawable.ic_train_delay_minor)
+            delayMinutes < 60 -> Icon.createWithResource(context, com.csakitheone.onrail.R.drawable.ic_train_delay_major)
+            else -> Icon.createWithResource(context, com.csakitheone.onrail.R.drawable.ic_train_delay_drastic)
+        }
+    }
 
     override fun toString(): String {
         // Convert the VehiclePosition to a JSON string representation

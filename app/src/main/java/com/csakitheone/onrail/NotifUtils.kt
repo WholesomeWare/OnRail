@@ -13,6 +13,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.graphics.toArgb
 import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.sources.MAVINFORM
 
@@ -74,6 +75,7 @@ class NotifUtils {
                 .setIntent(target)
                 .setLongLived(true)
                 .setShortLabel(trainDisplayName)
+                .setIcon(train.getDelayIcon(context))
                 .build()
 
             shortcutManager.addDynamicShortcuts(listOf(shortcut))
@@ -81,7 +83,7 @@ class NotifUtils {
             val bubbleData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 Notification.BubbleMetadata.Builder(
                     bubbleIntent,
-                    Icon.createWithResource(context, R.drawable.ic_train_24px)
+                    train.getDelayIcon(context)
                 )
                     .setDesiredHeight(720)
                     .setAutoExpandBubble(true)
@@ -89,7 +91,7 @@ class NotifUtils {
             } else {
                 Notification.BubbleMetadata.Builder()
                     .setIntent(bubbleIntent)
-                    .setIcon(Icon.createWithResource(context, R.drawable.ic_train_24px))
+                    .setIcon(train.getDelayIcon(context))
                     .setDesiredHeight(720)
                     .setAutoExpandBubble(chatMessage.isBlank())
                     .build()
@@ -110,7 +112,8 @@ class NotifUtils {
             val notification = Notification.Builder(context, CHANNEL_TRAIN_UPDATES)
                 .setContentTitle(trainDisplayName)
                 .setContentIntent(bubbleIntent)
-                .setSmallIcon(R.drawable.ic_train_24px)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setColor(train.delayColor.toArgb())
                 .setBubbleMetadata(bubbleData)
                 .setShortcutId(train.trip.gtfsId)
                 .setCategory(Notification.CATEGORY_MESSAGE)
