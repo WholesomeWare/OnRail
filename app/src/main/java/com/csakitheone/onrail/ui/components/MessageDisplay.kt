@@ -44,6 +44,8 @@ import com.csakitheone.onrail.data.sources.RTDB
 fun MessageDisplay(
     modifier: Modifier = Modifier,
     message: Message,
+    selfColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    onSelfColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
     isMarker: Boolean = false,
     selectable: Boolean = true,
     onClick: (Message) -> Unit = {},
@@ -138,8 +140,7 @@ fun MessageDisplay(
                 Text(text = "${time}")
             }
         }
-    }
-    else {
+    } else {
         Column(
             modifier = modifier,
             horizontalAlignment = if (message.senderId == Auth.currentUser?.uid) Alignment.End
@@ -184,12 +185,12 @@ fun MessageDisplay(
                         shape = MaterialTheme.shapes.extraLarge,
                         colors = CardDefaults.cardColors(
                             containerColor = if (message.senderId == Auth.currentUser?.uid) {
-                                MaterialTheme.colorScheme.primaryContainer
+                                selfColor
                             } else {
                                 MaterialTheme.colorScheme.surfaceVariant
                             },
                             contentColor = if (message.senderId == Auth.currentUser?.uid) {
-                                MaterialTheme.colorScheme.onPrimaryContainer
+                                onSelfColor
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },

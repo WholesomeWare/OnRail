@@ -2,9 +2,14 @@ package com.csakitheone.onrail.ui.theme
 import androidx.compose.ui.graphics.Color
 
 val colorDelayNone = Color(0xFF66A182)
+val onColorDelayNone = Color(0xFFD0E6DA)
 val colorDelayMinor = Color(0xFFFFFC99)
+val onColorDelayMinor = Color(0xFF3D3B07)
 val colorDelayMajor = Color(0xFFED7D3A)
+val onColorDelayMajor = Color(0xFFE6D2CC)
 val colorDelayDrastic = Color(0xFFBC0100)
+val onColorDelayDrastic = Color(0xFFD9D2D2)
+
 
 val primaryLight = Color(0xFF003E91)
 val onPrimaryLight = Color(0xFFFFFFFF)

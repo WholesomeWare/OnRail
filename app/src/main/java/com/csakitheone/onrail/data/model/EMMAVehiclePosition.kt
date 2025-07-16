@@ -7,6 +7,10 @@ import com.csakitheone.onrail.ui.theme.colorDelayDrastic
 import com.csakitheone.onrail.ui.theme.colorDelayMajor
 import com.csakitheone.onrail.ui.theme.colorDelayMinor
 import com.csakitheone.onrail.ui.theme.colorDelayNone
+import com.csakitheone.onrail.ui.theme.onColorDelayDrastic
+import com.csakitheone.onrail.ui.theme.onColorDelayMajor
+import com.csakitheone.onrail.ui.theme.onColorDelayMinor
+import com.csakitheone.onrail.ui.theme.onColorDelayNone
 import kotlinx.parcelize.Parcelize
 import org.json.JSONArray
 import org.json.JSONObject
@@ -48,6 +52,8 @@ data class EMMAVehiclePosition(
 
     val delayColor: Color
         get() = getDelayColor(delayMinutes)
+    val onDelayColor: Color
+        get() = getOnDelayColor(delayMinutes)
 
     override fun toString(): String {
         // Convert the VehiclePosition to a JSON string representation
@@ -93,6 +99,14 @@ data class EMMAVehiclePosition(
                 delayMinutes < 15 -> colorDelayMinor
                 delayMinutes < 60 -> colorDelayMajor
                 else -> colorDelayDrastic
+            }
+        }
+        fun getOnDelayColor(delayMinutes: Int): Color {
+            return when {
+                delayMinutes < 5 -> onColorDelayNone
+                delayMinutes < 15 -> onColorDelayMinor
+                delayMinutes < 60 -> onColorDelayMajor
+                else -> onColorDelayDrastic
             }
         }
 

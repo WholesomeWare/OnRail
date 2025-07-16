@@ -313,6 +313,7 @@ class MainActivity : ComponentActivity() {
                         filteredTrains.firstOrNull { it.trip.gtfsId == id }?.delayMinutes
                     }.maxOrNull() ?: 0
                     val worstDelayColor = EMMAVehiclePosition.getDelayColor(worstDelay)
+                    val onWorstDelayColor = EMMAVehiclePosition.getOnDelayColor(worstDelay)
 
                     return@addClusterer {
                         Surface(
@@ -323,7 +324,7 @@ class MainActivity : ComponentActivity() {
                             Text(
                                 modifier = Modifier.padding(8.dp),
                                 text = ids.size.toString(),
-                                color = Color.Black,
+                                color = onWorstDelayColor,
                                 textAlign = TextAlign.Center,
                             )
                         }
@@ -378,12 +379,13 @@ class MainActivity : ComponentActivity() {
                                     interactionSource = interactionSource,
                                     colors = IconButtonDefaults.filledIconButtonColors(
                                         containerColor = train.delayColor,
+                                        contentColor = train.onDelayColor,
                                     ),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Train,
                                         contentDescription = null,
-                                        tint = Color.Black.copy(alpha = .6f),
+                                        tint = train.onDelayColor,
                                     )
                                 }
                                 Icon(
@@ -397,6 +399,7 @@ class MainActivity : ComponentActivity() {
                                         .rotate(train.heading.toFloat() - 90f),
                                     imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
                                     contentDescription = null,
+                                    tint = train.onDelayColor,
                                 )
                             }
                             if (showMarkerBadges) {

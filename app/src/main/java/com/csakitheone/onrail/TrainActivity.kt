@@ -249,12 +249,13 @@ class TrainActivity : ComponentActivity() {
                                 },
                                 colors = IconButtonDefaults.filledIconButtonColors(
                                     containerColor = train.delayColor,
+                                    contentColor = train.onDelayColor,
                                 ),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Train,
                                     contentDescription = "Train position",
-                                    tint = Color.Black.copy(alpha = .6f),
+                                    tint = train.onDelayColor,
                                 )
                             }
                             Icon(
@@ -268,6 +269,7 @@ class TrainActivity : ComponentActivity() {
                                     .rotate(train.heading.toFloat() - 90f),
                                 imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
                                 contentDescription = null,
+                                tint = train.onDelayColor,
                             )
                         }
                         Badge {
@@ -820,6 +822,8 @@ class TrainActivity : ComponentActivity() {
                                     MessageDisplay(
                                         modifier = Modifier.fillMaxWidth(),
                                         message = message,
+                                        selfColor = train.delayColor,
+                                        onSelfColor = train.onDelayColor,
                                         onRemoveRequest = {
                                             if (Auth.currentUser?.uid == message.senderId) {
                                                 RTDB.removeMessage(
