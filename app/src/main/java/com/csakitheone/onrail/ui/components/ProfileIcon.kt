@@ -28,12 +28,16 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -139,19 +143,6 @@ fun ProfileIcon(
                             activity?.startActivity(
                                 Intent(
                                     Intent.ACTION_VIEW,
-                                    "https://www.patreon.com/c/wholesomeware".toUri()
-                                )
-                            )
-                        },
-                    ) {
-                        Text(text = "Fejlesztő támogatása")
-                    }
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            activity?.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
                                     "https://github.com/WholesomeWare/OnRail".toUri()
                                 )
                             )
@@ -225,12 +216,52 @@ fun ProfileIcon(
                         )
                     },
                 )
+                HorizontalDivider()
+                DropdownMenuItem(
+                    onClick = {
+                        val url = "https://play.google.com/store/apps/details?id=com.csakitheone.onrail"
+                        activity?.startActivity(
+                            Intent.createChooser(
+                                Intent(Intent.ACTION_SEND)
+                                    .setType("text/plain")
+                                    .putExtra(Intent.EXTRA_TEXT, url),
+                                "Sínen Vagyunk megosztása",
+                            )
+                        )
+                        isMenuOpen = false
+                    },
+                    text = { Text(text = "Sínen Vagyunk megosztása") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = null
+                        )
+                    },
+                )
+                DropdownMenuItem(
+                    onClick = {
+                        activity?.startActivity(
+                            Intent(
+                                Intent.ACTION_VIEW,
+                                "https://www.patreon.com/c/wholesomeware".toUri()
+                            )
+                        )
+                        isMenuOpen = false
+                    },
+                    text = { Text(text = "Fejlesztő támogatása") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = null
+                        )
+                    },
+                )
                 DropdownMenuItem(
                     onClick = {
                         isAboutDialogOpen = true
                         isMenuOpen = false
                     },
-                    text = { Text(text = "Névjegy") },
+                    text = { Text(text = "Névjegy és forráskód") },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Info,
