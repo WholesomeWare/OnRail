@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,11 +53,15 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedAssistChip
+import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
@@ -111,6 +116,7 @@ import com.csakitheone.onrail.data.model.EMMAVehiclePosition
 import com.csakitheone.onrail.data.model.Message
 import com.csakitheone.onrail.data.sources.LocalSettings
 import com.csakitheone.onrail.data.sources.RTDB
+import com.csakitheone.onrail.ui.components.ChatField
 import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.components.ServerInfoDialog
@@ -187,10 +193,8 @@ class TrainActivity : ComponentActivity() {
                 }
             }
         }
-        var messageText by rememberSaveable { mutableStateOf("") }
         var isSendingMessage by remember { mutableStateOf(false) }
         var isLocationSendingDialogOpen by rememberSaveable { mutableStateOf(false) }
-        var isAddReportMenuOpen by rememberSaveable { mutableStateOf(false) }
 
         LaunchedEffect(train, messages, selectedTab, LocationUtils.current) {
             val latestMessage = messages
@@ -468,138 +472,6 @@ class TrainActivity : ComponentActivity() {
                         }
                     },
                 )
-            }
-
-            if (isAddReportMenuOpen) {
-                ModalBottomSheet(
-                    onDismissRequest = { isAddReportMenuOpen = false },
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (isSendingLocationEnabled) Icons.Default.GpsFixed
-                            else Icons.Default.GpsOff,
-                            contentDescription = null,
-                        )
-                        Column(
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(text = "Helyadatok küldése")
-                            AnimatedVisibility(isSendingLocationEnabled) {
-                                Text(
-                                    text = "Köszönjük, hogy segítesz <3",
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            }
-                        }
-                        IconButton(
-                            onClick = { isLocationSendingDialogOpen = true },
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Default.Help,
-                                contentDescription = null,
-                            )
-                        }
-                        Switch(
-                            checked = isSendingLocationEnabled,
-                            onCheckedChange = { isEnabled ->
-                                if (isEnabled) {
-                                    LocationUtils.requestPermissions(this@TrainActivity) { isGranted ->
-                                        isSendingLocationEnabled = isGranted
-                                    }
-                                } else {
-                                    isSendingLocationEnabled = false
-                                }
-                            },
-                            thumbContent = {
-                                AnimatedVisibility(isSendingLocationEnabled) {
-                                    Icon(
-                                        modifier = Modifier.size(SwitchDefaults.IconSize),
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                    )
-                                }
-                            },
-                        )
-                    }
-
-                    HorizontalDivider()
-
-                    FlowRow(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .verticalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Message.reportOptions.forEach { reportOption ->
-                            NavigationBarItem(
-                                enabled = !isLoadingChat && !isSendingMessage && isSendingLocationEnabled,
-                                selected = false,
-                                onClick = {
-                                    isSendingMessage = true
-                                    isAddReportMenuOpen = false
-
-                                    val message = reportOption.copy(
-                                        timestamp = System.currentTimeMillis(),
-                                        senderId = Auth.currentUser!!.uid,
-                                        senderName = Auth.currentUser!!.displayName
-                                            ?: "Ismeretlen",
-                                    )
-
-                                    if (isSendingLocationEnabled) {
-                                        LocationUtils.getCurrentLocation(
-                                            this@TrainActivity
-                                        ) { latLng ->
-                                            RTDB.sendMessage(
-                                                chatRoomType = RTDB.ChatRoomType.TRAIN,
-                                                chatRoomId = train.trip.tripShortName,
-                                                message = message.copy(
-                                                    location = latLng.toString(),
-                                                ),
-                                            ) {
-                                                if (!it) {
-                                                    Toast.makeText(
-                                                        this@TrainActivity,
-                                                        "Hiba történt az üzenet küldésekor!",
-                                                        Toast.LENGTH_SHORT,
-                                                    ).show()
-                                                }
-                                                isSendingMessage = false
-                                            }
-                                        }
-                                        return@NavigationBarItem
-                                    } else {
-                                        Toast.makeText(
-                                            this@TrainActivity,
-                                            "Engedélyezd a helyadatok küldését ehhez!",
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                        isSendingMessage = false
-                                        return@NavigationBarItem
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = Message.getImageVector(reportOption),
-                                        contentDescription = null,
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = reportOption.content,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                },
-                            )
-                        }
-                    }
-                }
             }
 
             Surface(
@@ -884,11 +756,19 @@ class TrainActivity : ComponentActivity() {
                                 }
                             }
                         }
-                    } else {
-                        ToggleButton(
-                            checked = isSendingLocationEnabled,
-                            onCheckedChange = { isEnabled ->
-                                if (isEnabled) {
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ElevatedFilterChip(
+                            selected = isSendingLocationEnabled,
+                            onClick = {
+                                if (!isSendingLocationEnabled) {
                                     LocationUtils.requestPermissions(this@TrainActivity) { isGranted ->
                                         isSendingLocationEnabled = isGranted
                                     }
@@ -896,146 +776,86 @@ class TrainActivity : ComponentActivity() {
                                     isSendingLocationEnabled = false
                                 }
                             },
-                        ) {
-                            Icon(
-                                imageVector = if (isSendingLocationEnabled) Icons.Default.GpsFixed
-                                else Icons.Default.GpsOff,
-                                contentDescription = null,
-                            )
-                        }
-                    }
-
-                    HorizontalFloatingToolbar(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min)
-                            .padding(8.dp)
-                            .imePadding(),
-                        expanded = true,
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            if (Auth.currentUser != null) {
-                                if (selectedTab == TAB_MAP) {
-                                    AnimatedContent(train) {
-                                        Text(
-                                            modifier = Modifier.padding(horizontal = 8.dp),
-                                            text = "Végállomás: ${it.trip.tripHeadsign}\n" +
-                                                    "Késés: ${it.delayMinutes} perc",
-                                        )
-                                    }
-                                } else {
-                                    TextField(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(MaterialTheme.shapes.extraLarge),
-                                        enabled = !isLoadingChat,
-                                        value = messageText,
-                                        onValueChange = { messageText = it.take(500) },
-                                        leadingIcon = {
-                                            IconButton(
-                                                enabled = !isLoadingChat && !isSendingMessage,
-                                                onClick = { isAddReportMenuOpen = true },
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.AddCircle,
-                                                    contentDescription = null
-                                                )
-                                            }
-                                        },
-                                    )
-                                    Button(
-                                        enabled = !isLoadingChat && !isSendingMessage,
-                                        onClick = {
-                                            isSendingMessage = true
-                                            selectedTab = TAB_CHAT
-
-                                            if (messageText.isBlank()) {
-                                                return@Button
-                                            }
-
-                                            val message = Message(
-                                                timestamp = System.currentTimeMillis(),
-                                                senderId = Auth.currentUser!!.uid,
-                                                senderName = Auth.currentUser!!.displayName
-                                                    ?: "Ismeretlen",
-                                                messageType = Message.TYPE_TEXT,
-                                                content = messageText
-                                                    .take(RTDB.MESSAGE_CONTENT_LENGTH_LIMIT)
-                                                    .trim(),
-                                            )
-                                            messageText = ""
-
-                                            if (isSendingLocationEnabled) {
-                                                LocationUtils.getCurrentLocation(this@TrainActivity) { latLng ->
-                                                    RTDB.sendMessage(
-                                                        chatRoomType = RTDB.ChatRoomType.TRAIN,
-                                                        chatRoomId = train.trip.tripShortName,
-                                                        message = message.copy(
-                                                            location = latLng.toString(),
-                                                        ),
-                                                    ) {
-                                                        if (!it) {
-                                                            messageText = message.content
-                                                        }
-                                                        isSendingMessage = false
-                                                    }
-                                                }
-                                                return@Button
-                                            }
-
-                                            RTDB.sendMessage(
-                                                chatRoomType = RTDB.ChatRoomType.TRAIN,
-                                                chatRoomId = train.trip.tripShortName,
-                                                message = message,
-                                            ) {
-                                                if (!it) {
-                                                    messageText = message.content
-                                                }
-                                                isSendingMessage = false
-                                            }
-                                        }
-                                    ) {
-                                        if (isSendingMessage) {
-                                            LoadingIndicator(
-                                                modifier = Modifier.size(24.dp),
-                                            )
-                                        } else {
-                                            AnimatedVisibility(isSendingLocationEnabled) {
-                                                Icon(
-                                                    modifier = Modifier.size(12.dp),
-                                                    imageVector = Icons.Default.GpsFixed,
-                                                    contentDescription = "Send message with location",
-                                                )
-                                            }
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Default.Send,
-                                                contentDescription = "Send message",
-                                            )
-                                        }
-                                    }
-                                }
-                            } else {
-                                Text(
-                                    modifier = Modifier.weight(1f),
-                                    text = "Chat használatához jelentkezz be!",
-                                    style = MaterialTheme.typography.bodySmall,
+                            label = { Text(text = "Helyadatok küldése") },
+                            leadingIcon = {
+                                Icon(
+                                    modifier = Modifier.size(AssistChipDefaults.IconSize),
+                                    imageVector = if (isSendingLocationEnabled) Icons.Default.GpsFixed
+                                    else Icons.Default.GpsOff,
+                                    contentDescription = null,
                                 )
-                                Button(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            Auth.signInWithGoogle(this@TrainActivity)
-                                        }
-                                    },
+                            },
+                            trailingIcon = {
+                                IconButton(
+                                    modifier = Modifier.size(AssistChipDefaults.IconSize),
+                                    onClick = { isLocationSendingDialogOpen = true },
                                 ) {
-                                    Text(text = "Bejelentkezés")
+                                    Icon(
+                                        modifier = Modifier.size(AssistChipDefaults.IconSize),
+                                        imageVector = Icons.AutoMirrored.Default.Help,
+                                        contentDescription = null,
+                                    )
                                 }
-                            }
-                        }
+                            },
+                        )
+                        ElevatedAssistChip(
+                            onClick = {},
+                            label = { Text(text = "Késés: ${train.delayMinutes} perc") },
+                            colors = AssistChipDefaults.elevatedAssistChipColors(
+                                containerColor = train.delayColor,
+                                labelColor = train.onDelayColor,
+                            ),
+                        )
+                        ElevatedAssistChip(
+                            onClick = {},
+                            label = { Text(text = "Végállomás: ${train.trip.tripHeadsign}") },
+                        )
                     }
+
+                    ChatField(
+                        enabled = !isSendingMessage,
+                        onSend = { message ->
+                            isSendingMessage = true
+
+                            if (
+                                (message.messageType == Message.TYPE_LOCATION_PING ||
+                                        message.messageType == Message.TYPE_REPORT) &&
+                                !isSendingLocationEnabled
+                            ) {
+                                Toast.makeText(
+                                    this@TrainActivity,
+                                    "Ehhez engedélyezned kell a helyadatok küldését.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                isSendingMessage = false
+                                return@ChatField
+                            }
+
+                            selectedTab = TAB_CHAT
+
+                            if (isSendingLocationEnabled) {
+                                LocationUtils.getCurrentLocation(this@TrainActivity) { latLng ->
+                                    RTDB.sendMessage(
+                                        chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                        chatRoomId = train.trip.tripShortName,
+                                        message = message.copy(location = latLng.toString()),
+                                    ) {
+                                        isSendingMessage = false
+                                    }
+                                }
+                                return@ChatField
+                            }
+
+                            RTDB.sendMessage(
+                                chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                chatRoomId = train.trip.tripShortName,
+                                message = message,
+                            ) {
+                                isSendingMessage = false
+                            }
+                        },
+                        allowTrainReports = true,
+                    )
                 }
             }
         }

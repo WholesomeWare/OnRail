@@ -67,6 +67,24 @@ class RTDB {
                 }
         }
 
+        fun getWisecracks(
+            callback: (List<String>) -> Unit,
+        ) {
+            ref.child("config/WISECRACKS").get()
+                .addOnSuccessListener { snapshot ->
+                    if (!snapshot.exists()) {
+                        callback(emptyList())
+                        return@addOnSuccessListener
+                    }
+                    val wisecracks = snapshot.children
+                        .mapNotNull { it.getValue(String::class.java) }
+                        .sorted()
+                    callback(wisecracks)
+                }.addOnFailureListener {
+                    callback(emptyList())
+                }
+        }
+
         fun getChatRelevances(
             callback: (Map<ChatRoomType, Map<String, Long>>) -> Unit,
         ) {

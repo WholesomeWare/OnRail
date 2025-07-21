@@ -73,6 +73,7 @@ import com.csakitheone.onrail.data.Auth
 import com.csakitheone.onrail.data.model.Message
 import com.csakitheone.onrail.data.sources.MAVINFORM
 import com.csakitheone.onrail.data.sources.RTDB
+import com.csakitheone.onrail.ui.components.ChatField
 import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
@@ -94,7 +95,6 @@ class TerritoryActivity : ComponentActivity() {
     fun TerritoryScreen() {
         OnRailTheme {
             val colorScheme = MaterialTheme.colorScheme
-            val coroutineScope = rememberCoroutineScope()
             val chatListState = rememberLazyListState()
 
             val TAB_ARTICLES = 0
@@ -111,7 +111,6 @@ class TerritoryActivity : ComponentActivity() {
                 }
             }
             var messages by remember { mutableStateOf(listOf<Message>()) }
-            var messageText by remember { mutableStateOf("") }
 
             LaunchedEffect(Unit) {
                 territory = MAVINFORM.Territory.fromName(
@@ -158,7 +157,7 @@ class TerritoryActivity : ComponentActivity() {
                     },
                     onMessageRemoved = {
                         messages =
-                            messages.filter { msg -> msg.timestamp != it.timestamp }
+                            messages.filter { msg -> msg.key != it.key }
                     },
                 )
 
@@ -377,82 +376,19 @@ class TerritoryActivity : ComponentActivity() {
                                     )
                                 }
                             }
-                            HorizontalFloatingToolbar(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(IntrinsicSize.Min)
-                                    .padding(8.dp)
-                                    .navigationBarsPadding()
-                                    .imePadding(),
-                                expanded = true,
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    if (Auth.currentUser != null) {
-                                        TextField(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clip(MaterialTheme.shapes.extraLarge),
-                                            enabled = !isLoadingChat,
-                                            value = messageText,
-                                            onValueChange = { messageText = it.take(500) },
-                                        )
-                                        Button(
-                                            enabled = !isLoadingChat,
-                                            onClick = {
-                                                if (messageText.isBlank()) {
-                                                    return@Button
-                                                }
-
-                                                val message = Message(
-                                                    timestamp = System.currentTimeMillis(),
-                                                    senderId = Auth.currentUser!!.uid,
-                                                    senderName = Auth.currentUser!!.displayName
-                                                        ?: "Ismeretlen",
-                                                    messageType = Message.TYPE_TEXT,
-                                                    content = messageText
-                                                        .take(RTDB.MESSAGE_CONTENT_LENGTH_LIMIT)
-                                                        .trim(),
-                                                )
-                                                messageText = ""
-
-                                                RTDB.sendMessage(
-                                                    chatRoomType = RTDB.ChatRoomType.TERRITORY,
-                                                    chatRoomId = territory.displayName,
-                                                    message = message,
-                                                ) {
-                                                    if (!it) {
-                                                        messageText = message.content
-                                                    }
-                                                }
-                                            }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Default.Send,
-                                                contentDescription = "Send message",
-                                            )
-                                        }
-                                    } else {
-                                        Text(
-                                            modifier = Modifier.weight(1f),
-                                            text = "Chat használatához jelentkezz be!",
-                                            style = MaterialTheme.typography.bodySmall,
-                                        )
-                                        Button(
-                                            onClick = {
-                                                coroutineScope.launch {
-                                                    Auth.signInWithGoogle(this@TerritoryActivity)
-                                                }
-                                            },
-                                        ) {
-                                            Text(text = "Bejelentkezés")
-                                        }
+                            ChatField(
+                                enabled = !isLoadingChat,
+                                onSend = { message ->
+                                    isLoadingChat = true
+                                    RTDB.sendMessage(
+                                        chatRoomType = RTDB.ChatRoomType.TERRITORY,
+                                        chatRoomId = territory.displayName,
+                                        message = message,
+                                    ) {
+                                        isLoadingChat = false
                                     }
-                                }
-                            }
+                                },
+                            )
                         }
                     }
                 }
