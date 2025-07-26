@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
@@ -69,6 +71,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedAssistChip
+import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ElevatedToggleButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -76,6 +80,7 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -913,6 +918,31 @@ class MainActivity : ComponentActivity() {
 
                         else -> {
                             Spacer(modifier = Modifier.weight(1f))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                AnimatedVisibility(activeTrains.isNotEmpty() && selectedMapFilter != MAP_FILTER_ACTIVE_TRAINS) {
+                                    ElevatedFilterChip(
+                                        selected = selectedMapFilter == MAP_FILTER_ACTIVE_TRAINS,
+                                        onClick = { selectedMapFilter = MAP_FILTER_ACTIVE_TRAINS },
+                                        label = {
+                                            Text(text = "${activeTrains.size} aktív vonat")
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                                imageVector = Icons.Default.ChatBubble,
+                                                contentDescription = null
+                                            )
+                                        },
+                                    )
+                                }
+                            }
 
                             Row(
                                 modifier = Modifier
