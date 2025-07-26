@@ -226,28 +226,14 @@ class TrainActivity : ComponentActivity() {
             }
         }
 
-        LaunchedEffect(train, messages, selectedTab) {
-            val latestMessage = messages
-                .filter { it.location.isNotBlank() }
-                .maxByOrNull { it.timestamp }
+        DisposableEffect(train) {
             val trainLatLng = LatLng(train.lat, train.lon)
-            val latestLatLng = if ((latestMessage?.timestamp ?: 0L) > trainsLastUpdated) {
-                LatLng.fromString(latestMessage?.location)
-            } else if (trainLatLng != LatLng.ZERO) {
-                trainLatLng
-            } else if (LocationUtils.current != LatLng.ZERO) {
-                LocationUtils.current
-            } else {
-                // Default to Budapest
-                LatLng(47.4979, 19.0402)
-            }
+            val stops = train.trip.stoptimes.map { it.stop }
 
-            mapState.removeAllMarkers()
-
-            train.trip.stoptimes.forEach { stoptime ->
-                val latLng = LatLng(stoptime.stop.lat, stoptime.stop.lon)
+            stops.forEach { stop ->
+                val latLng = LatLng(stop.lat, stop.lon)
                 mapState.addMarker(
-                    id = "stop-${stoptime.stop.name}",
+                    id = "stop-${stop.name}",
                     x = latLng.normalized.longitude,
                     y = latLng.normalized.latitude,
                     relativeOffset = Offset(-.5f, -.5f),
@@ -313,13 +299,31 @@ class TrainActivity : ComponentActivity() {
                 }
             }
 
+            coroutineScope.launch {
+                mapState.scrollTo(
+                    x = trainLatLng.normalized.longitude,
+                    y = trainLatLng.normalized.latitude,
+                    destScale = .02,
+                )
+            }
+
+            onDispose {
+                stops.forEach { stop ->
+                    mapState.removeMarker("stop-${stop.name}")
+                }
+                mapState.removeMarker("train")
+            }
+        }
+
+        DisposableEffect(messages) {
+            val messageIds = messages.map { "${it.senderId}-${it.timestamp}" }
+
             messages
                 .filter { it.location.isNotBlank() }
                 .sortedByDescending { it.timestamp }
                 .take(30)
                 .forEachIndexed { index, msg ->
                     val latLng = LatLng.fromString(msg.location)
-                    val time = DateFormat.format("HH:mm", msg.timestamp)
                     val alpha = 1f / (index + 1) * 3f
                     coroutineScope.launch {
                         delay(index * 100L)
@@ -347,11 +351,9 @@ class TrainActivity : ComponentActivity() {
                     }
                 }
 
-            mapState.scrollTo(
-                x = latestLatLng.normalized.longitude,
-                y = latestLatLng.normalized.latitude,
-                destScale = .02,
-            )
+            onDispose {
+                messageIds.forEach { mapState.removeMarker(it) }
+            }
         }
 
         LaunchedEffect(selectedTab, readableMessages) {
