@@ -294,7 +294,7 @@ class TrainActivity : ComponentActivity() {
                             )
                         }
                         Badge {
-                            Text(text = "MÁV szerinti pozíció")
+                            Text(text = "${train.delayMinutes} perc késés")
                         }
                     }
                 }
@@ -480,7 +480,7 @@ class TrainActivity : ComponentActivity() {
                         Text(
                             modifier = Modifier.verticalScroll(rememberScrollState()),
                             text = "Végállomás: ${train.trip.tripHeadsign}\n\n" +
-                                    "Jelenlegi pozíció:\n${train.lat}, ${train.lon}\n\n" +
+                                    "Jelenlegi pozíció MÁV szerint:\n${train.lat}, ${train.lon}\n\n" +
                                     "Sebesség: ${train.speed}\n\n" +
                                     "Megállók (késéssel):\n" +
                                     train.trip.stoptimes.joinToString("\n") { stoptime ->
@@ -859,14 +859,6 @@ class TrainActivity : ComponentActivity() {
                                     )
                                 }
                             },
-                        )
-                        ElevatedAssistChip(
-                            onClick = {},
-                            label = { Text(text = "Késés: ${train.delayMinutes} perc") },
-                            colors = AssistChipDefaults.elevatedAssistChipColors(
-                                containerColor = train.delayColor,
-                                labelColor = train.onDelayColor,
-                            ),
                         )
                         ElevatedAssistChip(
                             onClick = {},
