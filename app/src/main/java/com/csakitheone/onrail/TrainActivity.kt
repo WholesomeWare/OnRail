@@ -226,7 +226,7 @@ class TrainActivity : ComponentActivity() {
             }
         }
 
-        DisposableEffect(train) {
+        DisposableEffect(train, selectedTab) {
             val trainLatLng = LatLng(train.lat, train.lon)
             val stops = train.trip.stoptimes.map { it.stop }
 
@@ -350,6 +350,21 @@ class TrainActivity : ComponentActivity() {
                         }
                     }
                 }
+
+            val latestMessageLatLng = LatLng.fromString(
+                messages
+                    .filter { it.location.isNotBlank() }.maxByOrNull { it.timestamp }
+                    ?.location
+            )
+            if (latestMessageLatLng != LatLng.ZERO) {
+                coroutineScope.launch {
+                    mapState.scrollTo(
+                        x = latestMessageLatLng.normalized.longitude,
+                        y = latestMessageLatLng.normalized.latitude,
+                        destScale = .02,
+                    )
+                }
+            }
 
             onDispose {
                 messageIds.forEach { mapState.removeMarker(it) }
@@ -639,14 +654,26 @@ class TrainActivity : ComponentActivity() {
                             }
                         }
                         ToggleButton(
+                            enabled = !isLoadingChat,
                             checked = selectedTab != TAB_MAP,
                             onCheckedChange = { selectedTab = TAB_CHAT },
                             shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ChatBubble,
-                                contentDescription = "Chat",
-                            )
+                            if (isLoadingChat) {
+                                LoadingIndicator(modifier = Modifier.size(IconButtonDefaults.smallIconSize))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.ChatBubble,
+                                    contentDescription = "Chat",
+                                )
+                            }
+                            AnimatedVisibility(selectedTab == TAB_MAP && messages.isNotEmpty()) {
+                                Text(
+                                    modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
+                                    text = DateFormat.format("HH:mm", messages.last().timestamp)
+                                        .toString(),
+                                )
+                            }
                             AnimatedVisibility(selectedTab != TAB_MAP) {
                                 Text(
                                     modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
