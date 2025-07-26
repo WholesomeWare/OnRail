@@ -450,7 +450,7 @@ class TrainActivity : ComponentActivity() {
 
             val distanceFromTrain = LatLng(train.lat, train.lon)
                 .distanceFrom(LocationUtils.current)
-            val distanceFromClosestStop = train.trip.stoptimes.minBy { stoptime ->
+            val distanceFromClosestStop = train.trip.stoptimes.minOf { stoptime ->
                 LatLng(stoptime.stop.lat, stoptime.stop.lon)
                     .distanceFrom(LocationUtils.current)
             }
