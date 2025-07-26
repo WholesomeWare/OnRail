@@ -177,14 +177,27 @@ class MainActivity : ComponentActivity() {
             val MAP_FILTER_MAVINFORM = "Területek"
 
             var hasInternet by remember { mutableStateOf(NetworkUtils.hasInternet(context)) }
+
             var motdText by remember { mutableStateOf("") }
             var isMotdCollapsed by rememberSaveable { mutableStateOf(false) }
-            var chatRoomRelevances by remember { mutableStateOf(emptyMap<RTDB.ChatRoomType, Map<String, Long>>()) }
-            var activeFilterDurationMillis by rememberSaveable { mutableLongStateOf(0L) }
+
             var isLoadingTrains by remember { mutableStateOf(false) }
             var isLoadingNews by remember { mutableStateOf(false) }
+
             var trains by remember { mutableStateOf(emptyList<EMMAVehiclePosition>()) }
             var trainsLastUpdated by remember { mutableLongStateOf(0L) }
+
+            var activeFilterDurationMillis by rememberSaveable { mutableLongStateOf(0L) }
+            var chatRoomRelevances by remember { mutableStateOf(emptyMap<RTDB.ChatRoomType, Map<String, Long>>()) }
+            val activeTrains by remember(trains, activeFilterDurationMillis, chatRoomRelevances) {
+                derivedStateOf {
+                    trains.filter { train ->
+                        val trainRelevance = chatRoomRelevances[RTDB.ChatRoomType.TRAIN]
+                            ?.get(train.trip.tripShortName) ?: 0L
+                        trainRelevance >= System.currentTimeMillis() - activeFilterDurationMillis
+                    }
+                }
+            }
 
             var isServerInfoDialogOpen by remember { mutableStateOf(false) }
             var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
@@ -211,8 +224,7 @@ class MainActivity : ComponentActivity() {
                 trains,
                 searchQuery,
                 selectedMapFilter,
-                chatRoomRelevances,
-                activeFilterDurationMillis,
+                activeTrains,
             ) {
                 derivedStateOf {
                     if (
@@ -222,19 +234,17 @@ class MainActivity : ComponentActivity() {
                         return@derivedStateOf emptyList()
                     }
 
-                    trains.filter { train ->
+                    if (selectedMapFilter == MAP_FILTER_ACTIVE_TRAINS) return@derivedStateOf activeTrains
+
+                    return@derivedStateOf trains.filter { train ->
                         val isSavedTrain =
                             selectedMapFilter != MAP_FILTER_SAVED_TRAINS || LocalSettings.savedTrainTripNames.contains(
                                 train.trip.tripShortName
                             )
-                        val trainRelevance = chatRoomRelevances[RTDB.ChatRoomType.TRAIN]
-                            ?.get(train.trip.tripShortName) ?: 0L
-                        val isActiveTrain =
-                            selectedMapFilter != MAP_FILTER_ACTIVE_TRAINS || trainRelevance >= System.currentTimeMillis() - activeFilterDurationMillis
                         val isSearched =
                             train.trip.tripShortName.contains(searchQuery, ignoreCase = true) ||
                                     train.trip.tripHeadsign.contains(searchQuery, ignoreCase = true)
-                        isSavedTrain && isActiveTrain && isSearched
+                        isSavedTrain && isSearched
                     }
                 }
             }
@@ -978,7 +988,7 @@ class MainActivity : ComponentActivity() {
                                                                 MAP_FILTER_ALL_TRAINS
                                                             isMapFilterMenuOpen = false
                                                         },
-                                                        text = { Text(text = MAP_FILTER_ALL_TRAINS) },
+                                                        text = { Text(text = "$MAP_FILTER_ALL_TRAINS (${trains.size})") },
                                                         leadingIcon = {
                                                             Icon(
                                                                 imageVector = Icons.Default.Train,
@@ -987,6 +997,7 @@ class MainActivity : ComponentActivity() {
                                                         },
                                                     )
                                                     DropdownMenuItem(
+                                                        enabled = LocalSettings.savedTrainTripNames.isNotEmpty(),
                                                         onClick = {
                                                             selectedMapFilter =
                                                                 MAP_FILTER_SAVED_TRAINS
@@ -1011,12 +1022,13 @@ class MainActivity : ComponentActivity() {
                                                         },
                                                     )
                                                     DropdownMenuItem(
+                                                        enabled = activeTrains.isNotEmpty(),
                                                         onClick = {
                                                             selectedMapFilter =
                                                                 MAP_FILTER_ACTIVE_TRAINS
                                                             isMapFilterMenuOpen = false
                                                         },
-                                                        text = { Text(text = MAP_FILTER_ACTIVE_TRAINS) },
+                                                        text = { Text(text = "$MAP_FILTER_ACTIVE_TRAINS (${activeTrains.size})") },
                                                         leadingIcon = {
                                                             Icon(
                                                                 imageVector = Icons.Default.ChatBubble,
