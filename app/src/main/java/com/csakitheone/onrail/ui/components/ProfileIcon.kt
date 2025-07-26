@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -174,7 +175,8 @@ fun ProfileIcon(
         },
         icon = {
             Icon(
-                imageVector = Icons.Default.AccountCircle,
+                imageVector = if (Auth.currentUser != null) Icons.Default.AccountCircle
+                else Icons.Outlined.AccountCircle,
                 contentDescription = null
             )
             DropdownMenu(

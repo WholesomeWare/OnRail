@@ -28,7 +28,9 @@ class Auth {
             private set
 
         init {
-            currentUser = auth.currentUser
+            auth.addAuthStateListener { authState ->
+                currentUser = authState.currentUser
+            }
         }
 
         suspend fun signInWithGoogle(
@@ -78,7 +80,7 @@ class Auth {
                 currentUser = null
                 callback(null)
             } catch (e: Exception) {
-                // Handle other exceptions
+                Log.e("Auth", e.message ?: "")
                 currentUser = null
                 callback(null)
             }
