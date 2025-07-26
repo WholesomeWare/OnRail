@@ -204,6 +204,15 @@ class LatLng(
         return "$latitude,$longitude"
     }
 
+    override fun hashCode(): Int {
+        return latitude.hashCode() * 31 + longitude.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return if (other is LatLng) other.latitude == latitude && other.longitude == longitude
+        else false
+    }
+
     companion object {
         val ZERO = LatLng(0.0, 0.0)
 
