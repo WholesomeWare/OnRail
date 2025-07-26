@@ -503,7 +503,7 @@ class TrainActivity : ComponentActivity() {
                     text = {
                         Text(
                             text = "A helyadatok küldése segít az utastársaknak pontos információkat kapni a vonat helyzetéről. " +
-                                    "Ha engedélyezed, az app időnként elküldi a pozíciódat minden utasnak vagy vonatra várónak.",
+                                    "Ha engedélyezed, az app az üzeneteidhez társítva elküldi a pozíciódat minden utasnak és vonatra várónak.",
                         )
                     },
                     confirmButton = {
@@ -684,7 +684,7 @@ class TrainActivity : ComponentActivity() {
                             AnimatedVisibility(selectedTab == TAB_MAP && messages.isNotEmpty()) {
                                 Text(
                                     modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
-                                    text = DateFormat.format("HH:mm", messages.last().timestamp)
+                                    text = DateFormat.format("HH:mm", messages.lastOrNull()?.timestamp ?: 0)
                                         .toString(),
                                 )
                             }
@@ -828,6 +828,8 @@ class TrainActivity : ComponentActivity() {
                         ElevatedFilterChip(
                             selected = isSendingLocationEnabled,
                             onClick = {
+                                isSendingLocationHintVisible = false
+
                                 if (!isSendingLocationEnabled) {
                                     LocationUtils.requestPermissions(this@TrainActivity) { isGranted ->
                                         isSendingLocationEnabled = isGranted
@@ -893,7 +895,7 @@ class TrainActivity : ComponentActivity() {
 
                             selectedTab = TAB_CHAT
 
-                            if (isSendingLocationEnabled) {
+                            if (isSendingLocationEnabled && LocationUtils.current != LatLng.ZERO) {
                                 if (!checkChatPermissionByDistance()) {
                                     Toast.makeText(
                                         context,
@@ -903,14 +905,12 @@ class TrainActivity : ComponentActivity() {
                                     return@ChatField
                                 }
 
-                                LocationUtils.getCurrentLocation(this@TrainActivity) { latLng ->
-                                    RTDB.sendMessage(
-                                        chatRoomType = RTDB.ChatRoomType.TRAIN,
-                                        chatRoomId = train.trip.tripShortName,
-                                        message = message.copy(location = latLng.toString()),
-                                    ) {
-                                        isSendingMessage = false
-                                    }
+                                RTDB.sendMessage(
+                                    chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                    chatRoomId = train.trip.tripShortName,
+                                    message = message.copy(location = LocationUtils.current.toString()),
+                                ) {
+                                    isSendingMessage = false
                                 }
                                 return@ChatField
                             }
