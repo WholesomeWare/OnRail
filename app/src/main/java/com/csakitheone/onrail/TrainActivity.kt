@@ -298,14 +298,14 @@ class TrainActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
 
-            coroutineScope.launch {
-                mapState.scrollTo(
-                    x = trainLatLng.normalized.longitude,
-                    y = trainLatLng.normalized.latitude,
-                    destScale = .02,
-                )
+                coroutineScope.launch {
+                    mapState.scrollTo(
+                        x = trainLatLng.normalized.longitude,
+                        y = trainLatLng.normalized.latitude,
+                        destScale = .02,
+                    )
+                }
             }
 
             onDispose {
