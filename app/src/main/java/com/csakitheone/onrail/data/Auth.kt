@@ -3,6 +3,8 @@ package com.csakitheone.onrail.data
 import android.app.Activity
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -67,10 +69,12 @@ class Auth {
                         }
                     }
             } catch (e: NoCredentialException) {
-                activity.startActivity(
-                    Intent(Settings.ACTION_ADD_ACCOUNT)
-                        .putExtra(Settings.EXTRA_ACCOUNT_TYPES, arrayOf("com.google"))
-                )
+                Log.e("Auth", e.message ?: "")
+                Toast.makeText(
+                    activity,
+                    "Hiba történt. Nincs Google fiók az eszközön?",
+                    Toast.LENGTH_SHORT
+                ).show()
                 currentUser = null
                 callback(null)
             } catch (e: Exception) {
