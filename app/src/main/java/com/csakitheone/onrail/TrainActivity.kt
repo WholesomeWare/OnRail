@@ -136,6 +136,7 @@ import ovh.plrapps.mapcompose.ui.MapUI
 import java.util.Timer
 import kotlin.concurrent.timerTask
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.sin
 
 class TrainActivity : ComponentActivity() {
@@ -449,8 +450,12 @@ class TrainActivity : ComponentActivity() {
 
             val distanceFromTrain = LatLng(train.lat, train.lon)
                 .distanceFrom(LocationUtils.current)
+            val distanceFromClosestStop = train.trip.stoptimes.minBy { stoptime ->
+                LatLng(stoptime.stop.lat, stoptime.stop.lon)
+                    .distanceFrom(LocationUtils.current)
+            }
 
-            return distanceFromTrain < 5_000
+            return min(distanceFromTrain, distanceFromClosestStop) < 5_000
         }
 
         OnRailTheme {
