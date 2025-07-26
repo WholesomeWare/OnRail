@@ -49,10 +49,12 @@ class LocationUtils {
         private var fusedLocationClient: FusedLocationProviderClient? = null
 
         fun register(activity: ComponentActivity) {
-            locationPermissionRequest = activity.registerForActivityResult(
-                ActivityResultContracts.RequestMultiplePermissions()
-            ) { permissions ->
-                onPermissionGranted(permissions.values.all { it })
+            if (locationPermissionRequest == null) {
+                locationPermissionRequest = activity.registerForActivityResult(
+                    ActivityResultContracts.RequestMultiplePermissions()
+                ) { permissions ->
+                    onPermissionGranted(permissions.values.all { it })
+                }
             }
         }
 
@@ -127,31 +129,6 @@ class LocationUtils {
 
                 onDispose {
                     fusedLocationClient?.removeLocationUpdates(locationCallback)
-                }
-            }
-        }
-
-        fun getLastKnownLocation(context: Context, callback: (LatLng) -> Unit) {
-            val isFineLocationGranted = ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-
-            if (!isFineLocationGranted) {
-                return
-            }
-
-            if (fusedLocationClient == null) {
-                fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-            }
-
-            fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
-                if (location != null) {
-                    val newLatLng = LatLng(location.latitude, location.longitude)
-                    if (current != newLatLng) current = newLatLng
-                    callback(newLatLng)
-                } else {
-                    callback(LatLng.ZERO)
                 }
             }
         }
