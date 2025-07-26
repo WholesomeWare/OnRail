@@ -3,15 +3,22 @@ package com.csakitheone.onrail
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import ovh.plrapps.mapcompose.api.addLayer
@@ -50,7 +57,7 @@ class LocationUtils {
 
         fun requestPermissions(context: Context, callback: (Boolean) -> Unit) {
             val isFineLocationGranted = ActivityCompat.checkSelfPermission(
-                context,
+                context.applicationContext,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
 
@@ -69,10 +76,57 @@ class LocationUtils {
                         Manifest.permission.ACCESS_COARSE_LOCATION
                     )
                 )
-            }
-            catch (e: Exception) {
+            } catch (e: Exception) {
                 Log.e("LocationUtils", "Error requesting permissions: ${e.message}")
                 onPermissionGranted(false)
+            }
+        }
+
+        @Composable
+        fun rememberLocationUpdates(
+            enabled: Boolean = true,
+        ) {
+            val context = LocalContext.current
+
+            DisposableEffect(enabled) {
+                if (!enabled) return@DisposableEffect onDispose {}
+
+                val isFineLocationGranted = ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (!isFineLocationGranted) {
+                    return@DisposableEffect onDispose {}
+                }
+
+                if (fusedLocationClient == null) {
+                    fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+                }
+
+                val locationCallback = object : LocationCallback() {
+                    override fun onLocationResult(locationResult: LocationResult) {
+                        if (locationResult.lastLocation != null) {
+                            current = LatLng(
+                                locationResult.lastLocation!!.latitude,
+                                locationResult.lastLocation!!.longitude
+                            )
+                        }
+                    }
+                }
+
+                fusedLocationClient?.requestLocationUpdates(
+                    LocationRequest.Builder(
+                        Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                        10_000
+                    ).build(),
+                    locationCallback,
+                    Looper.getMainLooper(),
+                )
+
+                onDispose {
+                    fusedLocationClient?.removeLocationUpdates(locationCallback)
+                }
             }
         }
 

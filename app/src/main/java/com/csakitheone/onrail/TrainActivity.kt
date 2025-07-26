@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -65,6 +66,8 @@ import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
@@ -126,6 +129,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ovh.plrapps.mapcompose.api.addMarker
 import ovh.plrapps.mapcompose.api.removeAllMarkers
+import ovh.plrapps.mapcompose.api.removeMarker
+import ovh.plrapps.mapcompose.api.scroll
 import ovh.plrapps.mapcompose.api.scrollTo
 import ovh.plrapps.mapcompose.ui.MapUI
 import java.util.Timer
@@ -196,7 +201,32 @@ class TrainActivity : ComponentActivity() {
         var isSendingMessage by remember { mutableStateOf(false) }
         var isLocationSendingDialogOpen by rememberSaveable { mutableStateOf(false) }
 
-        LaunchedEffect(train, messages, selectedTab, LocationUtils.current) {
+        LocationUtils.rememberLocationUpdates(enabled = isSendingLocationEnabled)
+
+        DisposableEffect(isSendingLocationEnabled, LocationUtils.current) {
+            if (LocationUtils.current != LatLng.ZERO) {
+                mapState.addMarker(
+                    id = "user",
+                    x = LocationUtils.current.normalized.longitude,
+                    y = LocationUtils.current.normalized.latitude,
+                    relativeOffset = Offset(-.5f, -.5f),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(Color.Blue)
+                            .alpha(.2f),
+                    )
+                }
+            }
+
+            onDispose {
+                mapState.removeMarker("user")
+            }
+        }
+
+        LaunchedEffect(train, messages, selectedTab) {
             val latestMessage = messages
                 .filter { it.location.isNotBlank() }
                 .maxByOrNull { it.timestamp }
@@ -236,7 +266,7 @@ class TrainActivity : ComponentActivity() {
 
             if (trainLatLng != LatLng.ZERO) {
                 mapState.addMarker(
-                    id = train.trip.gtfsId,
+                    id = "train",
                     x = trainLatLng.normalized.longitude,
                     y = trainLatLng.normalized.latitude,
                     relativeOffset = Offset(-.5f, -.5f),
@@ -316,25 +346,6 @@ class TrainActivity : ComponentActivity() {
                         }
                     }
                 }
-
-            if (LocationUtils.current == LatLng.ZERO) {
-                LocationUtils.getLastKnownLocation(this@TrainActivity) {}
-            } else {
-                mapState.addMarker(
-                    id = "user",
-                    x = LocationUtils.current.normalized.longitude,
-                    y = LocationUtils.current.normalized.latitude,
-                    relativeOffset = Offset(-.5f, -.5f),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clip(CircleShape)
-                            .background(Color.Blue)
-                            .alpha(.2f),
-                    )
-                }
-            }
 
             mapState.scrollTo(
                 x = latestLatLng.normalized.longitude,
@@ -626,36 +637,42 @@ class TrainActivity : ComponentActivity() {
                             }
                         }
                         ToggleButton(
-                            checked = selectedTab == TAB_CHAT,
+                            checked = selectedTab != TAB_MAP,
                             onCheckedChange = { selectedTab = TAB_CHAT },
-                            shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
+                            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ChatBubble,
                                 contentDescription = "Chat",
                             )
-                            AnimatedVisibility(selectedTab == TAB_CHAT) {
+                            AnimatedVisibility(selectedTab != TAB_MAP) {
                                 Text(
                                     modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
                                     text = "Chat"
                                 )
                             }
                         }
-                        ToggleButton(
-                            checked = selectedTab == TAB_REPORTS_ONLY,
-                            onCheckedChange = { selectedTab = TAB_REPORTS_ONLY },
-                            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+                        AnimatedVisibility(
+                            modifier = Modifier.padding(start = 8.dp),
+                            visible = selectedTab != TAB_MAP,
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Report,
-                                contentDescription = "Reports",
+                            ElevatedFilterChip(
+                                selected = selectedTab == TAB_REPORTS_ONLY,
+                                onClick = {
+                                    selectedTab = if (selectedTab == TAB_REPORTS_ONLY) TAB_CHAT
+                                    else TAB_REPORTS_ONLY
+                                },
+                                label = {
+                                    Text(text = "Csak jelentések")
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                                        imageVector = Icons.Default.Report,
+                                        contentDescription = "Reports",
+                                    )
+                                },
                             )
-                            AnimatedVisibility(selectedTab == TAB_REPORTS_ONLY) {
-                                Text(
-                                    modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
-                                    text = "Jelentések"
-                                )
-                            }
                         }
                     }
 
