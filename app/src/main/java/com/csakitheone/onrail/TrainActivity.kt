@@ -444,6 +444,15 @@ class TrainActivity : ComponentActivity() {
             }
         }
 
+        fun checkChatPermissionByDistance(): Boolean {
+            if (!isSendingLocationEnabled) return true
+
+            val distanceFromTrain = LatLng(train.lat, train.lon)
+                .distanceFrom(LocationUtils.current)
+
+            return distanceFromTrain < 5_000
+        }
+
         OnRailTheme {
             if (isServerInfoDialogOpen) {
                 ServerInfoDialog(
@@ -880,6 +889,15 @@ class TrainActivity : ComponentActivity() {
                             selectedTab = TAB_CHAT
 
                             if (isSendingLocationEnabled) {
+                                if (!checkChatPermissionByDistance()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Túl messze vagy a vonattól",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    return@ChatField
+                                }
+
                                 LocationUtils.getCurrentLocation(this@TrainActivity) { latLng ->
                                     RTDB.sendMessage(
                                         chatRoomType = RTDB.ChatRoomType.TRAIN,

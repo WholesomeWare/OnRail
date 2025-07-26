@@ -3,6 +3,7 @@ package com.csakitheone.onrail
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -253,6 +254,19 @@ class LatLng(
             },
             (longitude + 180) / 360.0
         )
+
+    /**
+     * Get distance in meters between two locations.
+     */
+    fun distanceFrom(other: LatLng?): Float {
+        val results = floatArrayOf(0f)
+        Location.distanceBetween(
+            latitude, longitude,
+            other?.latitude ?: 0.0, other?.longitude ?: 0.0,
+            results
+        )
+        return results[0]
+    }
 
     override fun toString(): String {
         return "$latitude,$longitude"
