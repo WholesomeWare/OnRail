@@ -132,6 +132,7 @@ import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.components.ServerInfoDialog
+import com.csakitheone.onrail.ui.components.TrainDelayDistributionIndicator
 import com.csakitheone.onrail.ui.theme.OnRailTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -943,6 +944,13 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
+
+                            TrainDelayDistributionIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                trains = filteredTrains,
+                            )
 
                             Row(
                                 modifier = Modifier
