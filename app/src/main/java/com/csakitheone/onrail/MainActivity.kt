@@ -20,6 +20,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -132,6 +133,7 @@ import com.csakitheone.onrail.data.sources.RTDB
 import com.csakitheone.onrail.ui.components.MIArticleDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.components.ServerInfoDialog
+import com.csakitheone.onrail.ui.components.SystemUIController
 import com.csakitheone.onrail.ui.components.TrainDelayDistributionIndicator
 import com.csakitheone.onrail.ui.theme.OnRailTheme
 import kotlinx.coroutines.delay
@@ -254,6 +256,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+
+            SystemUIController(
+                isStatusBarIconsDark = selectedTab == TAB_MAP || !isSystemInDarkTheme(),
+            )
 
             fun refresh() {
                 RTDB.getConfigString(RTDB.CONFIG_KEY_MOTD) { motdText = it }

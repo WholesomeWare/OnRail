@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -123,6 +124,7 @@ import com.csakitheone.onrail.ui.components.ChatField
 import com.csakitheone.onrail.ui.components.MessageDisplay
 import com.csakitheone.onrail.ui.components.ProfileIcon
 import com.csakitheone.onrail.ui.components.ServerInfoDialog
+import com.csakitheone.onrail.ui.components.SystemUIController
 import com.csakitheone.onrail.ui.fadingEdge
 import com.csakitheone.onrail.ui.theme.OnRailTheme
 import kotlinx.coroutines.delay
@@ -155,310 +157,314 @@ class TrainActivity : ComponentActivity() {
     @Preview
     @Composable
     fun TrainScreen() {
-        val context = LocalContext.current
-        val coroutineScope = rememberCoroutineScope()
+        OnRailTheme {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
 
-        val TAB_MAP = 0
-        val TAB_CHAT = 1
-        val TAB_REPORTS_ONLY = 2
+            val TAB_MAP = 0
+            val TAB_CHAT = 1
+            val TAB_REPORTS_ONLY = 2
 
-        val chatListState = rememberLazyListState()
-        val mapState = remember { LocationUtils.getMapState(context) }
+            val chatListState = rememberLazyListState()
+            val mapState = remember { LocationUtils.getMapState(context) }
 
-        var isLoadingTrain by remember { mutableStateOf(false) }
-        var isLoadingChat by remember { mutableStateOf(false) }
-        var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
-        var initialTrain by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
-        var train by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
-        var trainsLastUpdated by rememberSaveable { mutableLongStateOf(0L) }
-        val trainsLastUpdatedText by remember(trainsLastUpdated, isLoadingTrain) {
-            derivedStateOf {
-                if (trainsLastUpdated == 0L) {
-                    "Nincs adat"
-                } else {
-                    "Utoljára frissítve: ${DateFormat.format("HH:mm", trainsLastUpdated)}"
-                }
-            }
-        }
-        var isServerInfoDialogOpen by rememberSaveable { mutableStateOf(false) }
-        var isTrainInfoDialogOpen by rememberSaveable { mutableStateOf(false) }
-        var isSendingLocationEnabled by rememberSaveable { mutableStateOf(false) }
-        var isSendingLocationHintVisible by rememberSaveable { mutableStateOf(true) }
-        var messages by remember { mutableStateOf(listOf<Message>()) }
-        val readableMessages by remember(messages, selectedTab) {
-            derivedStateOf {
-                if (selectedTab == TAB_REPORTS_ONLY) {
-                    messages.filter { it.messageType == Message.TYPE_REPORT }
-                } else {
-                    messages.filter {
-                        listOf(
-                            Message.TYPE_TEXT,
-                            Message.TYPE_REPORT,
-                        ).contains(it.messageType)
+            var isLoadingTrain by remember { mutableStateOf(false) }
+            var isLoadingChat by remember { mutableStateOf(false) }
+            var selectedTab by rememberSaveable { mutableIntStateOf(TAB_MAP) }
+            var initialTrain by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
+            var train by rememberSaveable { mutableStateOf(EMMAVehiclePosition()) }
+            var trainsLastUpdated by rememberSaveable { mutableLongStateOf(0L) }
+            val trainsLastUpdatedText by remember(trainsLastUpdated, isLoadingTrain) {
+                derivedStateOf {
+                    if (trainsLastUpdated == 0L) {
+                        "Nincs adat"
+                    } else {
+                        "Utoljára frissítve: ${DateFormat.format("HH:mm", trainsLastUpdated)}"
                     }
                 }
             }
-        }
-        var isSendingMessage by remember { mutableStateOf(false) }
-        var isLocationSendingDialogOpen by rememberSaveable { mutableStateOf(false) }
-
-        LocationUtils.rememberLocationUpdates(enabled = isSendingLocationEnabled)
-
-        DisposableEffect(isSendingLocationEnabled, LocationUtils.current) {
-            if (LocationUtils.current != LatLng.ZERO) {
-                mapState.addMarker(
-                    id = "user",
-                    x = LocationUtils.current.normalized.longitude,
-                    y = LocationUtils.current.normalized.latitude,
-                    relativeOffset = Offset(-.5f, -.5f),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clip(CircleShape)
-                            .background(Color.Blue)
-                            .alpha(.2f),
-                    )
+            var isServerInfoDialogOpen by rememberSaveable { mutableStateOf(false) }
+            var isTrainInfoDialogOpen by rememberSaveable { mutableStateOf(false) }
+            var isSendingLocationEnabled by rememberSaveable { mutableStateOf(false) }
+            var isSendingLocationHintVisible by rememberSaveable { mutableStateOf(true) }
+            var messages by remember { mutableStateOf(listOf<Message>()) }
+            val readableMessages by remember(messages, selectedTab) {
+                derivedStateOf {
+                    if (selectedTab == TAB_REPORTS_ONLY) {
+                        messages.filter { it.messageType == Message.TYPE_REPORT }
+                    } else {
+                        messages.filter {
+                            listOf(
+                                Message.TYPE_TEXT,
+                                Message.TYPE_REPORT,
+                            ).contains(it.messageType)
+                        }
+                    }
                 }
             }
+            var isSendingMessage by remember { mutableStateOf(false) }
+            var isLocationSendingDialogOpen by rememberSaveable { mutableStateOf(false) }
 
-            onDispose {
-                mapState.removeMarker("user")
-            }
-        }
+            SystemUIController(
+                isStatusBarIconsDark = selectedTab == TAB_MAP || !isSystemInDarkTheme(),
+            )
 
-        DisposableEffect(train, selectedTab) {
-            val trainLatLng = LatLng(train.lat, train.lon)
-            val stops = train.trip.stoptimes.map { it.stop }
+            LocationUtils.rememberLocationUpdates(enabled = isSendingLocationEnabled)
 
-            stops.forEach { stop ->
-                val latLng = LatLng(stop.lat, stop.lon)
-                mapState.addMarker(
-                    id = "stop-${stop.name}",
-                    x = latLng.normalized.longitude,
-                    y = latLng.normalized.latitude,
-                    relativeOffset = Offset(-.5f, -.5f),
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
+            DisposableEffect(isSendingLocationEnabled, LocationUtils.current) {
+                if (LocationUtils.current != LatLng.ZERO) {
+                    mapState.addMarker(
+                        id = "user",
+                        x = LocationUtils.current.normalized.longitude,
+                        y = LocationUtils.current.normalized.latitude,
+                        relativeOffset = Offset(-.5f, -.5f),
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_octagon),
-                            contentDescription = null,
-                            tint = train.delayColor,
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(Color.Blue)
+                                .alpha(.2f),
                         )
                     }
                 }
+
+                onDispose {
+                    mapState.removeMarker("user")
+                }
             }
 
-            if (trainLatLng != LatLng.ZERO) {
-                mapState.addMarker(
-                    id = "train",
-                    x = trainLatLng.normalized.longitude,
-                    y = trainLatLng.normalized.latitude,
-                    relativeOffset = Offset(-.5f, -.5f),
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
+            DisposableEffect(train, selectedTab) {
+                val trainLatLng = LatLng(train.lat, train.lon)
+                val stops = train.trip.stoptimes.map { it.stop }
+
+                stops.forEach { stop ->
+                    val latLng = LatLng(stop.lat, stop.lon)
+                    mapState.addMarker(
+                        id = "stop-${stop.name}",
+                        x = latLng.normalized.longitude,
+                        y = latLng.normalized.latitude,
+                        relativeOffset = Offset(-.5f, -.5f),
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            FilledIconButton(
-                                onClick = {
-                                    isTrainInfoDialogOpen = true
-                                },
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = train.delayColor,
-                                    contentColor = train.onDelayColor,
-                                ),
+                            Icon(
+                                painter = painterResource(R.drawable.ic_octagon),
+                                contentDescription = null,
+                                tint = train.delayColor,
+                            )
+                        }
+                    }
+                }
+
+                if (trainLatLng != LatLng.ZERO) {
+                    mapState.addMarker(
+                        id = "train",
+                        x = trainLatLng.normalized.longitude,
+                        y = trainLatLng.normalized.latitude,
+                        relativeOffset = Offset(-.5f, -.5f),
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
                             ) {
+                                FilledIconButton(
+                                    onClick = {
+                                        isTrainInfoDialogOpen = true
+                                    },
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = train.delayColor,
+                                        contentColor = train.onDelayColor,
+                                    ),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Train,
+                                        contentDescription = "Train position",
+                                        tint = train.onDelayColor,
+                                    )
+                                }
                                 Icon(
-                                    imageVector = Icons.Default.Train,
-                                    contentDescription = "Train position",
+                                    modifier = Modifier
+                                        .offset(
+                                            x = (sin(Math.PI * train.heading / 180) * 22).dp,
+                                            y = (-cos(Math.PI * train.heading / 180) * 22).dp,
+                                        )
+                                        .clip(CircleShape)
+                                        .background(train.delayColor)
+                                        .rotate(train.heading.toFloat() - 90f),
+                                    imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
+                                    contentDescription = null,
                                     tint = train.onDelayColor,
                                 )
                             }
-                            Icon(
-                                modifier = Modifier
-                                    .offset(
-                                        x = (sin(Math.PI * train.heading / 180) * 22).dp,
-                                        y = (-cos(Math.PI * train.heading / 180) * 22).dp,
-                                    )
-                                    .clip(CircleShape)
-                                    .background(train.delayColor)
-                                    .rotate(train.heading.toFloat() - 90f),
-                                imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = train.onDelayColor,
-                            )
-                        }
-                        Badge {
-                            Text(text = "${train.delayMinutes} perc késés")
+                            Badge {
+                                Text(text = "${train.delayMinutes} perc késés")
+                            }
                         }
                     }
-                }
 
-                coroutineScope.launch {
-                    mapState.scrollTo(
-                        x = trainLatLng.normalized.longitude,
-                        y = trainLatLng.normalized.latitude,
-                        destScale = .02,
-                    )
-                }
-            }
-
-            onDispose {
-                stops.forEach { stop ->
-                    mapState.removeMarker("stop-${stop.name}")
-                }
-                mapState.removeMarker("train")
-            }
-        }
-
-        DisposableEffect(messages) {
-            val messageIds = messages.map { "${it.senderId}-${it.timestamp}" }
-
-            messages
-                .filter { it.location.isNotBlank() }
-                .sortedByDescending { it.timestamp }
-                .take(30)
-                .forEachIndexed { index, msg ->
-                    val latLng = LatLng.fromString(msg.location)
-                    val alpha = 1f / (index + 1) * 3f
                     coroutineScope.launch {
-                        delay(index * 100L)
-                        mapState.addMarker(
-                            id = "${msg.senderId}-${msg.timestamp}",
-                            x = latLng.normalized.longitude,
-                            y = latLng.normalized.latitude,
-                            relativeOffset = Offset(-.5f, -.5f),
-                        ) {
-                            MessageDisplay(
-                                modifier = Modifier.alpha(alpha),
-                                message = msg,
-                                isMarker = true,
-                                onRemoveRequest = {
-                                    if (Auth.currentUser?.uid == msg.senderId) {
-                                        RTDB.removeMessage(
-                                            chatRoomType = RTDB.ChatRoomType.TRAIN,
-                                            chatRoomId = train.trip.tripShortName,
-                                            message = it,
-                                        )
-                                    }
-                                },
-                            )
-                        }
+                        mapState.scrollTo(
+                            x = trainLatLng.normalized.longitude,
+                            y = trainLatLng.normalized.latitude,
+                            destScale = .02,
+                        )
                     }
                 }
 
-            val latestMessageLatLng = LatLng.fromString(
+                onDispose {
+                    stops.forEach { stop ->
+                        mapState.removeMarker("stop-${stop.name}")
+                    }
+                    mapState.removeMarker("train")
+                }
+            }
+
+            DisposableEffect(messages) {
+                val messageIds = messages.map { "${it.senderId}-${it.timestamp}" }
+
                 messages
-                    .filter { it.location.isNotBlank() }.maxByOrNull { it.timestamp }
-                    ?.location
-            )
-            if (latestMessageLatLng != LatLng.ZERO) {
-                coroutineScope.launch {
-                    mapState.scrollTo(
-                        x = latestMessageLatLng.normalized.longitude,
-                        y = latestMessageLatLng.normalized.latitude,
-                        destScale = .02,
-                    )
-                }
-            }
-
-            onDispose {
-                messageIds.forEach { mapState.removeMarker(it) }
-            }
-        }
-
-        LaunchedEffect(selectedTab, readableMessages) {
-            if (readableMessages.isNotEmpty() && chatListState.layoutInfo.totalItemsCount > 0) {
-                chatListState.scrollToItem(chatListState.layoutInfo.totalItemsCount - 1)
-            }
-        }
-
-        DisposableEffect(Unit) {
-            initialTrain = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
-            train = initialTrain.copy()
-
-            isLoadingChat = true
-            RTDB.getChatRelevances {
-                isLoadingChat = false
-            }
-
-            RTDB.listenForMessages(
-                chatRoomType = RTDB.ChatRoomType.TRAIN,
-                chatRoomId = train.trip.tripShortName,
-                onMessageAdded = {
-                    isLoadingChat = false
-
-                    messages = (messages + it).sortedBy { msg -> msg.timestamp }
-
-                    if (intent.getBooleanExtra(
-                            "bubble",
-                            false
-                        ) && it.senderId != Auth.currentUser?.uid
-                    ) {
-                        when (it.messageType) {
-                            Message.TYPE_TEXT -> {
-                                NotifUtils.showBubbleForTrain(
-                                    this@TrainActivity,
-                                    train,
-                                    chatMessageSenderName = it.senderName,
-                                    chatMessage = it.content
-                                )
-                            }
-
-                            Message.TYPE_REPORT -> {
-                                NotifUtils.showBubbleForTrain(
-                                    this@TrainActivity,
-                                    train,
-                                    chatMessage = "Új jelentés: ${it.content}"
+                    .filter { it.location.isNotBlank() }
+                    .sortedByDescending { it.timestamp }
+                    .take(30)
+                    .forEachIndexed { index, msg ->
+                        val latLng = LatLng.fromString(msg.location)
+                        val alpha = 1f / (index + 1) * 3f
+                        coroutineScope.launch {
+                            delay(index * 100L)
+                            mapState.addMarker(
+                                id = "${msg.senderId}-${msg.timestamp}",
+                                x = latLng.normalized.longitude,
+                                y = latLng.normalized.latitude,
+                                relativeOffset = Offset(-.5f, -.5f),
+                            ) {
+                                MessageDisplay(
+                                    modifier = Modifier.alpha(alpha),
+                                    message = msg,
+                                    isMarker = true,
+                                    onRemoveRequest = {
+                                        if (Auth.currentUser?.uid == msg.senderId) {
+                                            RTDB.removeMessage(
+                                                chatRoomType = RTDB.ChatRoomType.TRAIN,
+                                                chatRoomId = train.trip.tripShortName,
+                                                message = it,
+                                            )
+                                        }
+                                    },
                                 )
                             }
                         }
                     }
-                },
-                onMessageRemoved = {
-                    messages =
-                        messages.filter { msg -> msg.key != it.key }
-                },
-            )
 
-            val trainTimer = Timer("trainTimer").apply {
-                schedule(timerTask {
-                    isLoadingTrain = true
-                    TrainsProvider.getTrains(this@TrainActivity) { newTrains, lastUpdated ->
-                        train = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
-                            ?: initialTrain.copy(lat = 0.0, lon = 0.0)
-
-                        trainsLastUpdated = lastUpdated
-                        isLoadingTrain = false
+                val latestMessageLatLng = LatLng.fromString(
+                    messages
+                        .filter { it.location.isNotBlank() }.maxByOrNull { it.timestamp }
+                        ?.location
+                )
+                if (latestMessageLatLng != LatLng.ZERO) {
+                    coroutineScope.launch {
+                        mapState.scrollTo(
+                            x = latestMessageLatLng.normalized.longitude,
+                            y = latestMessageLatLng.normalized.latitude,
+                            destScale = .02,
+                        )
                     }
-                }, 0L, TrainsProvider.SERVER_UPDATE_INTERVAL)
+                }
+
+                onDispose {
+                    messageIds.forEach { mapState.removeMarker(it) }
+                }
             }
 
-            onDispose {
-                RTDB.stopListeningForMessages()
-                trainTimer.cancel()
+            LaunchedEffect(selectedTab, readableMessages) {
+                if (readableMessages.isNotEmpty() && chatListState.layoutInfo.totalItemsCount > 0) {
+                    chatListState.scrollToItem(chatListState.layoutInfo.totalItemsCount - 1)
+                }
             }
-        }
 
-        fun checkChatPermissionByDistance(): Boolean {
-            if (!isSendingLocationEnabled) return true
+            DisposableEffect(Unit) {
+                initialTrain = EMMAVehiclePosition.fromJson(intent.getStringExtra("trainJson"))
+                train = initialTrain.copy()
 
-            val distanceFromTrain = LatLng(train.lat, train.lon)
-                .distanceFrom(LocationUtils.current)
-            val distanceFromClosestStop = train.trip.stoptimes.minOf { stoptime ->
-                LatLng(stoptime.stop.lat, stoptime.stop.lon)
+                isLoadingChat = true
+                RTDB.getChatRelevances {
+                    isLoadingChat = false
+                }
+
+                RTDB.listenForMessages(
+                    chatRoomType = RTDB.ChatRoomType.TRAIN,
+                    chatRoomId = train.trip.tripShortName,
+                    onMessageAdded = {
+                        isLoadingChat = false
+
+                        messages = (messages + it).sortedBy { msg -> msg.timestamp }
+
+                        if (intent.getBooleanExtra(
+                                "bubble",
+                                false
+                            ) && it.senderId != Auth.currentUser?.uid
+                        ) {
+                            when (it.messageType) {
+                                Message.TYPE_TEXT -> {
+                                    NotifUtils.showBubbleForTrain(
+                                        this@TrainActivity,
+                                        train,
+                                        chatMessageSenderName = it.senderName,
+                                        chatMessage = it.content
+                                    )
+                                }
+
+                                Message.TYPE_REPORT -> {
+                                    NotifUtils.showBubbleForTrain(
+                                        this@TrainActivity,
+                                        train,
+                                        chatMessage = "Új jelentés: ${it.content}"
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    onMessageRemoved = {
+                        messages =
+                            messages.filter { msg -> msg.key != it.key }
+                    },
+                )
+
+                val trainTimer = Timer("trainTimer").apply {
+                    schedule(timerTask {
+                        isLoadingTrain = true
+                        TrainsProvider.getTrains(this@TrainActivity) { newTrains, lastUpdated ->
+                            train = newTrains.firstOrNull { it.trip.gtfsId == train.trip.gtfsId }
+                                ?: initialTrain.copy(lat = 0.0, lon = 0.0)
+
+                            trainsLastUpdated = lastUpdated
+                            isLoadingTrain = false
+                        }
+                    }, 0L, TrainsProvider.SERVER_UPDATE_INTERVAL)
+                }
+
+                onDispose {
+                    RTDB.stopListeningForMessages()
+                    trainTimer.cancel()
+                }
+            }
+
+            fun checkChatPermissionByDistance(): Boolean {
+                if (!isSendingLocationEnabled) return true
+
+                val distanceFromTrain = LatLng(train.lat, train.lon)
                     .distanceFrom(LocationUtils.current)
+                val distanceFromClosestStop = train.trip.stoptimes.minOf { stoptime ->
+                    LatLng(stoptime.stop.lat, stoptime.stop.lon)
+                        .distanceFrom(LocationUtils.current)
+                }
+
+                return min(distanceFromTrain, distanceFromClosestStop) < 5_000
             }
-
-            return min(distanceFromTrain, distanceFromClosestStop) < 5_000
-        }
-
-        OnRailTheme {
+            
             if (isServerInfoDialogOpen) {
                 ServerInfoDialog(
                     title = trainsLastUpdatedText,
@@ -684,7 +690,10 @@ class TrainActivity : ComponentActivity() {
                             AnimatedVisibility(selectedTab == TAB_MAP && messages.isNotEmpty()) {
                                 Text(
                                     modifier = Modifier.padding(start = ToggleButtonDefaults.IconSpacing),
-                                    text = DateFormat.format("HH:mm", messages.lastOrNull()?.timestamp ?: 0)
+                                    text = DateFormat.format(
+                                        "HH:mm",
+                                        messages.lastOrNull()?.timestamp ?: 0
+                                    )
                                         .toString(),
                                 )
                             }
