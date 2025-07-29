@@ -464,7 +464,7 @@ class TrainActivity : ComponentActivity() {
 
                 return min(distanceFromTrain, distanceFromClosestStop) < 5_000
             }
-            
+
             if (isServerInfoDialogOpen) {
                 ServerInfoDialog(
                     title = trainsLastUpdatedText,
