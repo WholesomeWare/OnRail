@@ -53,9 +53,6 @@ class EMMA {
                         vehicleId
                         lat lon
                         label speed heading
-                        stopRelationship { status }
-                        prevOrCurrentStop { stop { name lat lon } }
-                        nextStop { stop { name lat lon } }
                     }
                 }
             """.replace("\n", " ")
@@ -93,19 +90,6 @@ class EMMA {
                     return@launch
                 }
             }
-        }
-
-        private fun fetchDelay(gtfsId: String) {
-            val date: String? = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val query = """
-                {
-                    trip(
-                        id: \"" + $gtfsId + "\", serviceDay: \"" + $date + "\"
-                    ) {
-                        stoptimes { arrivalDelay }
-                    }
-                }
-            """.trimIndent()
         }
 
     }
