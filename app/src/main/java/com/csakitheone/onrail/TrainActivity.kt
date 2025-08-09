@@ -462,7 +462,7 @@ class TrainActivity : ComponentActivity() {
                         .distanceFrom(LocationUtils.current)
                 }
 
-                return min(distanceFromTrain, distanceFromClosestStop) < 5_000
+                return min(distanceFromTrain, distanceFromClosestStop) < 10_000
             }
 
             if (isServerInfoDialogOpen) {
@@ -903,6 +903,7 @@ class TrainActivity : ComponentActivity() {
                                         "Túl messze vagy a vonattól",
                                         Toast.LENGTH_SHORT
                                     ).show()
+                                    isSendingMessage = false
                                     return@ChatField
                                 }
 
