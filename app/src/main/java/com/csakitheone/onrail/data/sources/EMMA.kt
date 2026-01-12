@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
 class EMMA {
     companion object {
         private const val BASE_URL =
-            "https://emma.mav.hu/otp2-backend/otp/routers/default/index/graphql"
+            "https://mavplusz.hu//otp2-backend/otp/routers/default/index/graphql"
         private val client = OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
