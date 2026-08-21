@@ -247,6 +247,27 @@ class RTDB {
             }
         }
 
+        fun getArticleSummary(
+            articleLink: String,
+            callback: (String) -> Unit,
+        ) {
+            val sanitizedLink = articleLink.replace("/", "_").replace(".", "_")
+            ref.child("articleSummaries/$sanitizedLink").get()
+                .addOnSuccessListener { snapshot ->
+                    callback(snapshot.getValue(String::class.java) ?: "")
+                }.addOnFailureListener {
+                    callback("")
+                }
+        }
+
+        fun saveArticleSummary(
+            articleLink: String,
+            summary: String,
+        ) {
+            val sanitizedLink = articleLink.replace("/", "_").replace(".", "_")
+            ref.child("articleSummaries/$sanitizedLink").setValue(summary)
+        }
+
         /**
          * Clears messages older than the OLD_MESSAGE_CUTOFF.
          * This function should only be called with an unmetered network connection

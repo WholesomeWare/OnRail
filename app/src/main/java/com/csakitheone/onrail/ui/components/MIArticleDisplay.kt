@@ -26,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -46,10 +47,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import com.csakitheone.onrail.NetworkUtils
+import com.csakitheone.onrail.data.Auth
+import com.csakitheone.onrail.data.Gemini
 import com.csakitheone.onrail.data.model.MIArticle
 import com.csakitheone.onrail.data.sources.MAVINFORM
 import com.csakitheone.onrail.data.sources.MAVINFORM.Companion.isCached
+import com.csakitheone.onrail.data.sources.RTDB
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -59,9 +66,49 @@ fun MIArticleDisplay(
 ) {
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
+    val coroutineScope = rememberCoroutineScope()
 
     var isDialogOpen by remember { mutableStateOf(false) }
     var isDownloading by remember { mutableStateOf(false) }
+
+    var aiSummary by remember { mutableStateOf(article.aiSummary) }
+    var isLoadingAiSummary by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isDialogOpen) {
+        if (!isDialogOpen || Auth.currentUser == null || aiSummary.isNotBlank()) return@LaunchedEffect
+
+        isLoadingAiSummary = true
+        RTDB.getArticleSummary(article.link) { summary ->
+            if (summary.isNotBlank()) {
+                aiSummary = summary
+                isLoadingAiSummary = false
+            } else {
+                coroutineScope.launch {
+                    if (article.content.isBlank()) {
+                        MAVINFORM.fetchArticleContent(context, article) { content ->
+                            coroutineScope.launch {
+                                // Wait a bit for everything to settle
+                                kotlinx.coroutines.delay(500)
+                                val generatedSummary = Gemini.summarizeArticle(article.title, content)
+                                if (!generatedSummary.startsWith("Hiba:")) {
+                                    RTDB.saveArticleSummary(article.link, generatedSummary)
+                                }
+                                aiSummary = generatedSummary
+                                isLoadingAiSummary = false
+                            }
+                        }
+                    } else {
+                        val generatedSummary = Gemini.summarizeArticle(article.title, article.content)
+                        if (!generatedSummary.startsWith("Hiba:")) {
+                            RTDB.saveArticleSummary(article.link, generatedSummary)
+                        }
+                        aiSummary = generatedSummary
+                        isLoadingAiSummary = false
+                    }
+                }
+            }
+        }
+    }
 
     if (isDialogOpen) {
         AlertDialog(
@@ -118,6 +165,36 @@ fun MIArticleDisplay(
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
+                    if (Auth.currentUser == null) {
+                        Text(
+                            text = "AI összefoglalók használatához bejelentkezés szükséges.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                modifier = Modifier.align(Alignment.Start),
+                                text = "AI összefoglaló",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            if (isLoadingAiSummary) {
+                                LoadingIndicator()
+                            } else {
+                                Text(
+                                    text = aiSummary.ifBlank { "Nincs összefoglaló." },
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
                     if (article.content.isNotBlank()) {
                         AndroidView(
                             factory = {
@@ -267,7 +344,7 @@ fun MIArticleDisplay(
                                 }
 
                                 isDownloading = true
-                                MAVINFORM.fetchArticleContent(context, article) {
+                                MAVINFORM.fetchArticleContent(context, article) { _ ->
                                     isDownloading = false
                                 }
                             },

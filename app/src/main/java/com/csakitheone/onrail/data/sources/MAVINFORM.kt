@@ -116,7 +116,7 @@ class MAVINFORM {
         fun fetchArticleContent(
             context: Context,
             article: MIArticle,
-            callback: () -> Unit = {},
+            callback: (String) -> Unit = { _ -> },
         ) {
             if (!NetworkUtils.hasInternet(context)) {
                 return
@@ -140,7 +140,7 @@ class MAVINFORM {
                         it
                     }
                 }
-                callback()
+                callback(htmlContent)
             }
         }
 
